@@ -7,4 +7,4 @@ sealed class EstadoPedido{
     data class Rechazado(
         val motivo: String
     ): EstadoPedido()
-}git add .
+}
