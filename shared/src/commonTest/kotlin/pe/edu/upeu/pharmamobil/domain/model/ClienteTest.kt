@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 
 class ClienteTest{
 
+    @Suppress("SuspiciousIndentation")
     @Test
     fun probarCliente(){
 
