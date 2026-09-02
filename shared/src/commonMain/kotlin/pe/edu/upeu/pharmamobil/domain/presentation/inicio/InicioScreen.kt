@@ -11,6 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Color
+import org.jetbrains.compose.resources.painterResource
+import pharmamobil.shared.generated.resources.Res
+import pharmamobil.shared.generated.resources.pharmamobil_logo
 @Composable
 fun InicioScreen() {
 
@@ -22,9 +28,17 @@ fun InicioScreen() {
         verticalArrangement = Arrangement.Center
     ) {
 
+        Icon(
+            painter = painterResource(Res.drawable.pharmamobil_logo),
+            contentDescription = "Logo PharmaMobil",
+            tint = Color.Unspecified,
+            modifier = Modifier.size(96.dp)
+        )
+
         Text(
             text = "PharmaMobil",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(top = 16.dp)
         )
 
         Text(

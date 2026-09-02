@@ -17,6 +17,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 @Composable
 fun ProductoScreen() {
 
@@ -67,9 +78,11 @@ fun ProductoScreen() {
             stockValor < 0 -> "El stock no puede ser negativo"
             else -> null
         }
-
         return nombreError == null && precioError == null && stockError == null
     }
+
+    var tabSeleccionada by remember { mutableStateOf(0) }
+    val titulosTabs = listOf("Activos", "Inactivos", "Bajo Stock")
 
     Column(
         modifier = Modifier
@@ -148,5 +161,44 @@ fun ProductoScreen() {
         mensajeExito?.let {
             Text(it)
         }
-    }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text("Inventario")
+
+        ScrollableTabRow(selectedTabIndex = tabSeleccionada) {
+            titulosTabs.forEachIndexed { index, titulo ->
+                Tab(
+                    selected = tabSeleccionada == index,
+                    onClick = { tabSeleccionada = index },
+                    text = { Text(titulo) }
+                )
+            }
+        }
+
+        val productosFiltrados = when (tabSeleccionada) {
+            0 -> productosMock.filter { it.activo && it.stock > 5 }       // Activos
+            1 -> productosMock.filter { !it.activo }                      // Inactivos
+            else -> productosMock.filter { it.stock <= 5 }                // Bajo Stock
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(productosFiltrados) { producto ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    colors = CardDefaults.cardColors()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(producto.nombre)
+                        Text("Precio: S/ ${producto.precio}  |  Stock: ${producto.stock}")
+                    }
+                }
+            }
+        }
+}
+
 }
