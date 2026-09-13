@@ -37,6 +37,8 @@ import kotlinx.coroutines.launch
 import pe.edu.upeu.pharmamobil.domain.presentation.cliente.ClienteScreen
 import pe.edu.upeu.pharmamobil.domain.presentation.inicio.InicioScreen
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoScreen
+import org.koin.compose.viewmodel.koinViewModel
+import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
 
 import pe.edu.upeu.pharmamobil.navigation.Screen
 import pe.edu.upeu.pharmamobil.theme.PharmaMobilTheme
@@ -237,7 +239,8 @@ fun App() {
                                 .padding(paddingValues)
                         ) {
 
-                            ProductoScreen()
+                            val productoViewModel = koinViewModel<ProductoViewModel>()
+                            ProductoScreen(viewModel = productoViewModel)
                         }
                     }
 

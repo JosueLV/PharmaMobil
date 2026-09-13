@@ -2,12 +2,12 @@ package pe.edu.upeu.pharmamobil.domain.repository
 
 
 import kotlinx.coroutines.test.runTest
-import pe.edu.upeu.pharmamobil.data.repository.ProductoRepository
+import pe.edu.upeu.pharmamobil.data.repository.ProductoRepositorioEnMemoria
 import kotlin.test.Test
 
 class ProductoRepositoryTest {
 
-    private val repository = ProductoRepository()
+    private val repository = ProductoRepositorioEnMemoria()
 
     @Test
     fun probarObtenerProductos() = runTest {
