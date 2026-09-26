@@ -5,8 +5,10 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
@@ -22,7 +24,14 @@ fun crearHttpClient(engine: HttpClientEngine): HttpClient =
                 encodeDefaults = true
             })
         }
-        install(Logging) { level = LogLevel.HEADERS }
+        install(Logging) {
+            logger = object : Logger {
+                override fun log(message: String) {
+                    println("PHARMA_KTOR_LOG: $message")
+                }
+            }
+            level = LogLevel.HEADERS
+        }
         install(HttpTimeout) {
             requestTimeoutMillis = 15000
             connectTimeoutMillis = 10000
