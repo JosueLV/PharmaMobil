@@ -4,11 +4,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.random.Random
+import pe.edu.upeu.pharmamobil.data.mapper.toDomain
+import pe.edu.upeu.pharmamobil.data.remote.ProductoApi
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.model.ResultadoProductos
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 
-class ProductoRepositorioEnMemoria : ProductoRepository {
+class ProductoRepositorioEnMemoria(
+    private val api: ProductoApi
+) : ProductoRepository {
 
     private val productos = mutableListOf(
         Producto(id = 1, nombre = "Paracetamol", precio = 15.50, stock = 100, activo = true),
@@ -32,10 +36,9 @@ class ProductoRepositorioEnMemoria : ProductoRepository {
         return producto
     }
 
-    override suspend fun listar(): List<Producto> {
-        delay(800)
-        throw Exception("Error simulado de conexión")
-    }
+    // Antes lanzaba una excepción simulada; ahora consume la API real vía Ktor.
+    override suspend fun listar(): List<Producto> =
+        api.obtenerProductosRemotos().map { it.toDomain() }
 
     // Métodos de sesiones anteriores (se conservan para no romper ProductoRepositoryTest)
     suspend fun obtenerProductos(): List<Producto> {
