@@ -11,4 +11,7 @@ class ProductoApi(private val client: HttpClient) {
         client.get("products") {
             parameter("limit", limite)
         }.body()
+
+    suspend fun obtenerProductoPorId(id: Int): ProductoDto =
+        client.get("products/$id").body()
 }
