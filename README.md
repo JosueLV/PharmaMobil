@@ -22,3 +22,9 @@ Ejemplo: `https://api.escuelajs.co/api/v1/products?limit=10`
 | `category` | `CategoriaDto?` | No |
 
 `CategoriaDto`: `id: Int`, `name: String`.
+
+## Conectividad REST
+
+- **URL base:** `https://api.escuelajs.co/api/v1/`
+- **Endpoints implementados:** `GET /products`, `GET /products/{id}`
+- **Manejo de errores:** excepciones de red, timeout y deserialización se capturan en `ProductoRepositorioEnMemoria` y se exponen como `ProductoListaEstado.Error` sin cerrar la aplicación.
