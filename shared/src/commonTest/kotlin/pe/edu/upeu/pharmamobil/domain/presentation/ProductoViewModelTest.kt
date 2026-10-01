@@ -10,6 +10,8 @@ import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoListaEstado
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
+import pe.edu.upeu.pharmamobil.domain.usecase.ActualizarProductoUseCase
+import pe.edu.upeu.pharmamobil.domain.usecase.EliminarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -34,58 +36,77 @@ class ProductoViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun crearViewModel(repositorio: ProductoRepository) = ProductoViewModel(
+        registrarProductoUseCase = RegistrarProductoUseCase(repositorio),
+        actualizarProductoUseCase = ActualizarProductoUseCase(repositorio),
+        eliminarProductoUseCase = EliminarProductoUseCase(repositorio),
+        productoRepository = repositorio
+    )
 
     private class RepositorioVacio : ProductoRepository {
-        override suspend fun registrar(nombre: String, precio: Double, stock: Int): Producto {
-            error("No debería llamarse registrar() en esta prueba")
-        }
-
         override suspend fun listar(): List<Producto> = emptyList()
+        override suspend fun obtener(id: Long): Producto =
+            error("No debería llamarse obtener() en esta prueba")
+        override suspend fun registrar(producto: Producto): Producto =
+            error("No debería llamarse registrar() en esta prueba")
+        override suspend fun actualizar(producto: Producto): Producto =
+            error("No debería llamarse actualizar() en esta prueba")
+        override suspend fun eliminar(id: Long) =
+            error("No debería llamarse eliminar() en esta prueba")
     }
 
 
     private class RepositorioConProductos : ProductoRepository {
-        override suspend fun registrar(nombre: String, precio: Double, stock: Int): Producto {
-            error("No debería llamarse registrar() en esta prueba")
-        }
-
         override suspend fun listar(): List<Producto> = listOf(
             Producto(id = 1, nombre = "Paracetamol", precio = 15.50, stock = 100),
             Producto(id = 2, nombre = "Ibuprofeno", precio = 18.90, stock = 50),
             Producto(id = 3, nombre = "Amoxicilina", precio = 25.00, stock = 5)
         )
+        override suspend fun obtener(id: Long): Producto =
+            error("No debería llamarse obtener() en esta prueba")
+        override suspend fun registrar(producto: Producto): Producto =
+            error("No debería llamarse registrar() en esta prueba")
+        override suspend fun actualizar(producto: Producto): Producto =
+            error("No debería llamarse actualizar() en esta prueba")
+        override suspend fun eliminar(id: Long) =
+            error("No debería llamarse eliminar() en esta prueba")
     }
 
 
     private class RepositorioConError : ProductoRepository {
-        override suspend fun registrar(nombre: String, precio: Double, stock: Int): Producto {
-            error("No debería llamarse registrar() en esta prueba")
-        }
-
         override suspend fun listar(): List<Producto> {
             throw Exception("Error simulado de conexión")
         }
+        override suspend fun obtener(id: Long): Producto =
+            error("No debería llamarse obtener() en esta prueba")
+        override suspend fun registrar(producto: Producto): Producto =
+            error("No debería llamarse registrar() en esta prueba")
+        override suspend fun actualizar(producto: Producto): Producto =
+            error("No debería llamarse actualizar() en esta prueba")
+        override suspend fun eliminar(id: Long) =
+            error("No debería llamarse eliminar() en esta prueba")
     }
 
 
     private class RepositorioEspiaRegistro : ProductoRepository {
         var seLlamoRegistrar: Boolean = false
 
-        override suspend fun registrar(nombre: String, precio: Double, stock: Int): Producto {
-            seLlamoRegistrar = true
-            return Producto(id = 99, nombre = nombre, precio = precio, stock = stock)
-        }
-
         override suspend fun listar(): List<Producto> = emptyList()
+        override suspend fun obtener(id: Long): Producto =
+            error("No debería llamarse obtener() en esta prueba")
+        override suspend fun registrar(producto: Producto): Producto {
+            seLlamoRegistrar = true
+            return producto.copy(id = 99)
+        }
+        override suspend fun actualizar(producto: Producto): Producto =
+            error("No debería llamarse actualizar() en esta prueba")
+        override suspend fun eliminar(id: Long) =
+            error("No debería llamarse eliminar() en esta prueba")
     }
 
     @Test
     fun repositorioVacio_produceFaseSinProductos() = runTest(dispatcher) {
-        val repositorio = RepositorioVacio()
-        val viewModel = ProductoViewModel(
-            registrarProductoUseCase = RegistrarProductoUseCase(repositorio),
-            productoRepository = repositorio
-        )
+        val viewModel = crearViewModel(RepositorioVacio())
 
         dispatcher.scheduler.advanceUntilIdle()
 
@@ -94,11 +115,7 @@ class ProductoViewModelTest {
 
     @Test
     fun repositorioConProductos_produceFaseConProductos() = runTest(dispatcher) {
-        val repositorio = RepositorioConProductos()
-        val viewModel = ProductoViewModel(
-            registrarProductoUseCase = RegistrarProductoUseCase(repositorio),
-            productoRepository = repositorio
-        )
+        val viewModel = crearViewModel(RepositorioConProductos())
 
         dispatcher.scheduler.advanceUntilIdle()
 
@@ -109,11 +126,7 @@ class ProductoViewModelTest {
 
     @Test
     fun repositorioConExcepcion_produceFaseError() = runTest(dispatcher) {
-        val repositorio = RepositorioConError()
-        val viewModel = ProductoViewModel(
-            registrarProductoUseCase = RegistrarProductoUseCase(repositorio),
-            productoRepository = repositorio
-        )
+        val viewModel = crearViewModel(RepositorioConError())
 
         dispatcher.scheduler.advanceUntilIdle()
 
@@ -125,10 +138,7 @@ class ProductoViewModelTest {
     @Test
     fun registroConPrecioCero_dejaErrorEnFormularioSinLlamarRepositorio() = runTest(dispatcher) {
         val repositorio = RepositorioEspiaRegistro()
-        val viewModel = ProductoViewModel(
-            registrarProductoUseCase = RegistrarProductoUseCase(repositorio),
-            productoRepository = repositorio
-        )
+        val viewModel = crearViewModel(repositorio)
         dispatcher.scheduler.advanceUntilIdle()
 
         viewModel.onNombreChange("Paracetamol")
