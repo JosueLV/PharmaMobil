@@ -1,4 +1,4 @@
-package pe.edu.upeu.pharmamobil.data.remote.dto
+package pe.edu.upeu.pharmamobil.data.remote
 
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -6,6 +6,7 @@ import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ServerResponseException
 import kotlinx.coroutines.CancellationException
 import kotlinx.io.IOException
+import pe.edu.upeu.pharmamobil.data.remote.dto.ErrorResponseDto
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 
