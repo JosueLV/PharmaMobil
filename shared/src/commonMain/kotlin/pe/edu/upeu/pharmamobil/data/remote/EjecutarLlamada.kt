@@ -11,11 +11,14 @@ import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 
 
+
 suspend fun <T> ejecutarLlamada(bloque: suspend () -> T): Result<T> =
     try {
         Result.success(bloque())
     } catch (cancelacion: CancellationException) {
         throw cancelacion
+    } catch (e: ErrorApiException) {
+        Result.failure(e)
     } catch (e: ClientRequestException) {
         Result.failure(ErrorApiException(traducirCliente(e)))
     } catch (e: ServerResponseException) {
