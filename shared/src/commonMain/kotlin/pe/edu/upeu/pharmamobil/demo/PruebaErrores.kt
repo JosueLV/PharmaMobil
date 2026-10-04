@@ -93,3 +93,9 @@ fun probarTimeout(api: ProductoApi) {
         logResultado("PHARMA_TEST_TIMEOUT", resultado)
     }
 }
+fun probarObtener(api: ProductoApi, id: Long) {
+    CoroutineScope(Dispatchers.Default).launch {
+        val resultado = ejecutarLlamada { api.obtener(id) }
+        logResultado("PHARMA_TEST_OBTENER", resultado)
+    }
+}
