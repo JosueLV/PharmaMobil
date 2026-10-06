@@ -32,7 +32,7 @@ class ProductoViewModel(
                         lista = if (productos.isEmpty())
                             ProductoListaEstado.SinProductos
                         else
-                            ProductoListaEstado.ConProductos(productos)
+                            ProductoListaEstado.ConProductos(productos.map { it.toUi() })
                     )
                 }
             } catch (e: Exception) {

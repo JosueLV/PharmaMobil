@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.presentation.components.EstadoVacio
 import pe.edu.upeu.pharmamobil.domain.presentation.components.MensajeExito
 import pe.edu.upeu.pharmamobil.domain.presentation.components.ValidatedTextField
@@ -235,7 +234,7 @@ private fun FormularioProductoCard(
 }
 
 @Composable
-private fun ProductoItem(producto: Producto) {
+private fun ProductoItem(producto: ProductoUi) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -262,13 +261,13 @@ private fun ProductoItem(producto: Producto) {
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = "S/ ${producto.precio}  ·  ${producto.stock} u.",
+                    text = "${producto.precio}  ·  ${producto.stock} u.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            if (producto.requiereReposicion()) {
+            if (producto.requiereReposicion) {
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.errorContainer,

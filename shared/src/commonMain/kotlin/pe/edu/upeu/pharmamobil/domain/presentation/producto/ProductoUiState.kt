@@ -5,7 +5,7 @@ import pe.edu.upeu.pharmamobil.domain.model.Producto
 sealed interface ProductoListaEstado {
     data object Cargando : ProductoListaEstado
     data object SinProductos : ProductoListaEstado
-    data class ConProductos(val productos: List<Producto>) : ProductoListaEstado
+    data class ConProductos(val productos: List<ProductoUi>) : ProductoListaEstado
     data class Error(val mensaje: String) : ProductoListaEstado
 }
 
