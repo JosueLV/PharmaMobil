@@ -14,6 +14,7 @@ import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 
+import pe.edu.upeu.pharmamobil.domain.presentation.producto.DetalleProductoViewModel
 expect val platformModule: Module
 
 val networkModule = module {
@@ -31,6 +32,7 @@ val useCaseModule = module {
 
 val viewModelModule = module {
     viewModelOf(::ProductoViewModel)
+    viewModelOf(::DetalleProductoViewModel)
 }
 
 fun initKoin(config: KoinAppDeclaration? = null) {

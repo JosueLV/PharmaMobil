@@ -1,5 +1,6 @@
 package pe.edu.upeu.pharmamobil.domain.presentation.producto
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,11 @@ fun ProductoScreen(
     var tabSeleccionada by remember { mutableStateOf(0) }
     val titulosTabs = listOf("Activos", "Inactivos", "Bajo Stock")
 
+    var detalleId by remember { mutableStateOf<Long?>(null) }
+    detalleId?.let { id ->
+        DetalleProductoScreen(productoId = id, onVolver = { detalleId = null })
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -154,7 +160,7 @@ fun ProductoScreen(
                                 items = productosFiltrados,
                                 key = { it.id }
                             ) { producto ->
-                                ProductoItem(producto)
+                                ProductoItem(producto, onClick = { detalleId = producto.id })
                             }
                         }
                     }
@@ -234,8 +240,8 @@ private fun FormularioProductoCard(
 }
 
 @Composable
-private fun ProductoItem(producto: ProductoUi) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun ProductoItem(producto: ProductoUi, onClick: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
