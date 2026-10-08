@@ -44,3 +44,19 @@ Sesión 9: capacidades dependientes de la plataforma, resueltas con expect/actua
 - Ninguna clase de `presentation` importa `android.*` ni `platform.UIKit`.
 - En iOS, Koin se inicia desde `iOSApp.swift` con `KoinIosKt.doInitKoinIos()`.
 - Las pruebas se ejecutaron en Android (`./gradlew :shared:testAndroidHostTest`, 11/11). El target iOS se compila en macOS con Xcode.
+
+## Código específico de plataforma
+
+Inventario de capacidades que dependen del sistema operativo. Las rutas son relativas a `shared/src/<source set>/kotlin/pe/edu/upeu/pharmamobil/`.
+
+| Capacidad | commonMain | androidMain | iosMain |
+|---|---|---|---|
+| Plataforma (plantilla) | `Platform.kt` (expect fun getPlatform) | `Platform.android.kt` (Build) | `Platform.ios.kt` (UIDevice) |
+| Formato de moneda | `platform/Formato.kt` (expect fun) | `platform/Formato.android.kt` (NumberFormat) | `platform/Formato.ios.kt` (NSNumberFormatter) |
+| Módulo de inyección | `di/AppModule.kt` (expect val platformModule) | `di/PlatformModule.android.kt` | `di/PlatformModule.ios.kt` |
+| Compartir producto | `domain/platform/Compartidor.kt` (interface) | `platform/CompartidorAndroid.kt` (Intent) | `platform/CompartidorIos.kt` (UIActivityViewController) |
+| Información del dispositivo | `platform/InfoDispositivo.kt` (expect class) | `platform/InfoDispositivo.android.kt` | `platform/InfoDispositivo.ios.kt` |
+
+Regla de aislamiento: `commonMain` no importa `android.*` ni `platform.*` (Apple). Se comprueba con:
+
+    Get-ChildItem shared\src\commonMain -Recurse -Filter *.kt | Select-String "^import (android|platform)\."
