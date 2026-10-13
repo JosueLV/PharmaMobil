@@ -16,14 +16,19 @@ import pe.edu.upeu.pharmamobil.domain.usecase.ActualizarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.EliminarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 
+import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
+
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.DetalleProductoViewModel
 expect val platformModule: Module
 
 // id real de la categoria "Medicamentos" creada en PharmaSoft (POST /api/v1/categorias)
 private const val CATEGORIA_POR_DEFECTO = 1L
 
+private const val ES_DEPURACION = true
 val networkModule = module {
-    single<HttpClient> { crearHttpClient(get<HttpClientEngine>()) }
+    single<HttpClient> {
+        crearHttpClient(get<HttpClientEngine>(), get<AlmacenSeguro>(), ES_DEPURACION)
+    }
     single { ProductoApi(get()) }
 }
 
