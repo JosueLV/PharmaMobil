@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material3.Button
@@ -21,7 +23,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
@@ -46,15 +50,21 @@ fun ProductoScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val formulario = uiState.formulario
+    val operacion = uiState.operacion
 
     var tabSeleccionada by remember { mutableStateOf(0) }
     val titulosTabs = listOf("Activos", "Inactivos", "Bajo Stock")
+
+    val idEnCursoEliminando = (operacion as? Operacion.EnCurso)
+        ?.takeIf { it.tipo == Operacion.Tipo.Eliminar }
+        ?.productoId
 
     var detalleId by remember { mutableStateOf<Long?>(null) }
     detalleId?.let { id ->
         DetalleProductoScreen(productoId = id, onVolver = { detalleId = null })
         return
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -63,6 +73,7 @@ fun ProductoScreen(
     ) {
 
         FormularioProductoCard(
+            estaEditando = formulario.estaEditando,
             nombre = formulario.nombre,
             precio = formulario.precio,
             stock = formulario.stock,
@@ -73,11 +84,38 @@ fun ProductoScreen(
             onNombreChange = viewModel::onNombreChange,
             onPrecioChange = viewModel::onPrecioChange,
             onStockChange = viewModel::onStockChange,
-            onRegistrar = viewModel::registrar
+            onGuardar = viewModel::registrar,
+            onCancelar = viewModel::cancelarEdicion
         )
 
-        formulario.mensajeExito?.let {
+        uiState.mensajeExito?.let {
             MensajeExito(it)
+        }
+
+        if (operacion is Operacion.Fallida) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = operacion.mensaje,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = viewModel::descartarError) {
+                        Icon(imageVector = Icons.Default.CloudOff, contentDescription = "Cerrar")
+                    }
+                }
+            }
         }
 
         Text(
@@ -132,7 +170,7 @@ fun ProductoScreen(
                         colorIcono = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center),
                         accion = {
-                            FilledTonalButton(onClick = viewModel::cargarProductos) {
+                            FilledTonalButton(onClick = { viewModel.cargarProductos() }) {
                                 Text("Reintentar")
                             }
                         }
@@ -160,7 +198,13 @@ fun ProductoScreen(
                                 items = productosFiltrados,
                                 key = { it.id }
                             ) { producto ->
-                                ProductoItem(producto, onClick = { detalleId = producto.id })
+                                ProductoItem(
+                                    producto = producto,
+                                    eliminando = idEnCursoEliminando == producto.id,
+                                    onClick = { detalleId = producto.id },
+                                    onEditar = { viewModel.iniciarEdicion(producto.id) },
+                                    onEliminar = { viewModel.eliminar(producto.id) }
+                                )
                             }
                         }
                     }
@@ -172,6 +216,7 @@ fun ProductoScreen(
 
 @Composable
 private fun FormularioProductoCard(
+    estaEditando: Boolean,
     nombre: String,
     precio: String,
     stock: String,
@@ -182,7 +227,8 @@ private fun FormularioProductoCard(
     onNombreChange: (String) -> Unit,
     onPrecioChange: (String) -> Unit,
     onStockChange: (String) -> Unit,
-    onRegistrar: () -> Unit
+    onGuardar: () -> Unit,
+    onCancelar: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -190,7 +236,7 @@ private fun FormularioProductoCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Registrar producto",
+                text = if (estaEditando) "Editar producto" else "Registrar producto",
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -228,19 +274,47 @@ private fun FormularioProductoCard(
                 )
             }
 
-            Button(
-                onClick = onRegistrar,
-                enabled = !enviando,
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(if (enviando) "Registrando…" else "Registrar")
+                if (estaEditando) {
+                    OutlinedButton(
+                        onClick = onCancelar,
+                        enabled = !enviando,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+
+                Button(
+                    onClick = onGuardar,
+                    enabled = !enviando,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        when {
+                            enviando && estaEditando -> "Guardando…"
+                            enviando -> "Registrando…"
+                            estaEditando -> "Guardar cambios"
+                            else -> "Registrar"
+                        }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ProductoItem(producto: ProductoUi, onClick: () -> Unit) {
+private fun ProductoItem(
+    producto: ProductoUi,
+    eliminando: Boolean,
+    onClick: () -> Unit,
+    onEditar: () -> Unit,
+    onEliminar: () -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -284,6 +358,17 @@ private fun ProductoItem(producto: ProductoUi, onClick: () -> Unit) {
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
+                }
+            }
+
+            if (eliminando) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            } else {
+                IconButton(onClick = onEditar) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar")
+                }
+                IconButton(onClick = onEliminar) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
                 }
             }
         }
