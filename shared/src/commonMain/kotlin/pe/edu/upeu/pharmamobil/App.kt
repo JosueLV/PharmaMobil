@@ -43,6 +43,9 @@ import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
 import pe.edu.upeu.pharmamobil.navigation.Screen
 import pe.edu.upeu.pharmamobil.theme.PharmaMobilTheme
 
+import androidx.compose.material.icons.filled.Info
+import pe.edu.upeu.pharmamobil.domain.presentation.acercade.AcercaDeScreen
+
 
 @Composable
 fun App() {
@@ -158,6 +161,21 @@ fun App() {
                         }
                     )
 
+                    NavigationDrawerItem(
+                        label = { Text("Acerca de") },
+                        selected = pantallaActual is Screen.AcercaDe,
+                        onClick = {
+                            pantallaActual = Screen.AcercaDe
+                            scope.launch { drawerState.close() }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Acerca de"
+                            )
+                        }
+                    )
+
                     Spacer(
                         modifier = Modifier.padding(8.dp)
                     )
@@ -265,6 +283,12 @@ fun App() {
                             Text("Pantalla de pedidos en construcción")
                         }
                     }
+
+                    Screen.AcercaDe -> {
+                        Column(modifier = Modifier.padding(paddingValues)) {
+                            AcercaDeScreen()
+                        }
+                    }
                 }
             }
         }
@@ -311,6 +335,9 @@ private fun tituloPantalla(
 
         Screen.Pedidos ->
             "Pedidos"
+
+        Screen.AcercaDe ->
+            "Acerca de"
     }
 
     /*
