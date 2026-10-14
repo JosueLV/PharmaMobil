@@ -22,6 +22,11 @@ import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.DetalleProductoViewModel
 import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
 
+import pe.edu.upeu.pharmamobil.domain.model.SesionEventos
+import pe.edu.upeu.pharmamobil.domain.presentation.sesion.SesionViewModel
+import pe.edu.upeu.pharmamobil.domain.usecase.CerrarSesionUseCase
+import pe.edu.upeu.pharmamobil.domain.usecase.IniciarSesionUseCase
+
 expect val platformModule: Module
 
 // id real de la categoria "Medicamentos" creada en PharmaSoft (POST /api/v1/categorias)
@@ -29,8 +34,14 @@ private const val CATEGORIA_POR_DEFECTO = 1L
 
 private const val ES_DEPURACION = true
 val networkModule = module {
+    single { SesionEventos() }
     single<HttpClient> {
-        crearHttpClient(get<HttpClientEngine>(), get<AlmacenSeguro>(), ES_DEPURACION)
+        crearHttpClient(
+            get<HttpClientEngine>(),
+            get<AlmacenSeguro>(),
+            ES_DEPURACION,
+            get<SesionEventos>()::notificarExpirada
+        )
     }
     single { ProductoApi(get()) }
 }
@@ -46,11 +57,14 @@ val useCaseModule = module {
     factory { RegistrarProductoUseCase(get()) }
     factory { ActualizarProductoUseCase(get()) }
     factory { EliminarProductoUseCase(get()) }
+    factory { IniciarSesionUseCase(get()) }
+    factory { CerrarSesionUseCase(get()) }
 }
 
 val viewModelModule = module {
     viewModelOf(::ProductoViewModel)
     viewModelOf(::DetalleProductoViewModel)
+    viewModelOf(::SesionViewModel)
 }
 
 fun initKoin(config: KoinAppDeclaration? = null) {
