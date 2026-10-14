@@ -46,7 +46,8 @@ import pe.edu.upeu.pharmamobil.domain.presentation.components.ValidatedTextField
 
 @Composable
 fun ProductoScreen(
-    viewModel: ProductoViewModel
+    viewModel: ProductoViewModel,
+    puedeEscribir: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val formulario = uiState.formulario
@@ -72,21 +73,23 @@ fun ProductoScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-        FormularioProductoCard(
-            estaEditando = formulario.estaEditando,
-            nombre = formulario.nombre,
-            precio = formulario.precio,
-            stock = formulario.stock,
-            nombreError = formulario.nombreError,
-            precioError = formulario.precioError,
-            stockError = formulario.stockError,
-            enviando = formulario.enviando,
-            onNombreChange = viewModel::onNombreChange,
-            onPrecioChange = viewModel::onPrecioChange,
-            onStockChange = viewModel::onStockChange,
-            onGuardar = viewModel::registrar,
-            onCancelar = viewModel::cancelarEdicion
-        )
+        if (puedeEscribir) {
+            FormularioProductoCard(
+                estaEditando = formulario.estaEditando,
+                nombre = formulario.nombre,
+                precio = formulario.precio,
+                stock = formulario.stock,
+                nombreError = formulario.nombreError,
+                precioError = formulario.precioError,
+                stockError = formulario.stockError,
+                enviando = formulario.enviando,
+                onNombreChange = viewModel::onNombreChange,
+                onPrecioChange = viewModel::onPrecioChange,
+                onStockChange = viewModel::onStockChange,
+                onGuardar = viewModel::registrar,
+                onCancelar = viewModel::cancelarEdicion
+            )
+        }
 
         uiState.mensajeExito?.let {
             MensajeExito(it)
@@ -158,7 +161,7 @@ fun ProductoScreen(
                     EstadoVacio(
                         icono = Icons.Default.Inventory2,
                         titulo = "Todavía no hay productos",
-                        descripcion = "Registra el primero con el formulario de arriba.",
+                        descripcion = if (puedeEscribir) "Registra el primero con el formulario de arriba." else "Aún no hay productos en el catálogo.",
                         modifier = Modifier.align(Alignment.Center)
                     )
 
@@ -201,6 +204,7 @@ fun ProductoScreen(
                                 ProductoItem(
                                     producto = producto,
                                     eliminando = idEnCursoEliminando == producto.id,
+                                    mostrarAcciones = puedeEscribir,
                                     onClick = { detalleId = producto.id },
                                     onEditar = { viewModel.iniciarEdicion(producto.id) },
                                     onEliminar = { viewModel.eliminar(producto.id) }
@@ -311,6 +315,7 @@ private fun FormularioProductoCard(
 private fun ProductoItem(
     producto: ProductoUi,
     eliminando: Boolean,
+    mostrarAcciones: Boolean,
     onClick: () -> Unit,
     onEditar: () -> Unit,
     onEliminar: () -> Unit
@@ -361,7 +366,9 @@ private fun ProductoItem(
                 }
             }
 
-            if (eliminando) {
+            if (!mostrarAcciones) {
+                // sin el permiso CATALOGO_ESCRIBIR la tarjeta es solo de lectura
+            } else if (eliminando) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             } else {
                 IconButton(onClick = onEditar) {
@@ -374,3 +381,4 @@ private fun ProductoItem(
         }
     }
 }
+
