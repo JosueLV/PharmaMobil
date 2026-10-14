@@ -225,6 +225,8 @@ class ProductoViewModel(
         is ErrorApi.SinConexion -> "No hay conexión con el servidor"
         is ErrorApi.TiempoAgotado -> "El servidor tardó demasiado en responder"
         is ErrorApi.Validacion -> "Hay campos del formulario con errores"
+        is ErrorApi.NoAutenticado -> "Tu sesión expiró. Inicia sesión nuevamente"
+        is ErrorApi.SinPermiso -> "No tienes permisos para realizar esta operación"
     }
 
     fun descartarError() {
