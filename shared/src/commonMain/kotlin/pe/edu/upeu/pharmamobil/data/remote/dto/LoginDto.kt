@@ -15,3 +15,13 @@ data class LoginResponseDto(
     val roles: List<String>,
     val permisos: List<String>
 )
+@Serializable
+data class UsuarioActualDto(
+    val id: Long,
+    val username: String,
+    val empleadoNombre: String? = null,
+    val cargo: String? = null,
+    val roles: List<String> = emptyList(),
+    val permisos: List<String> = emptyList(),
+    val estado: Boolean = true
+)

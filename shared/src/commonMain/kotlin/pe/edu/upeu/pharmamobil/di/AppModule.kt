@@ -17,8 +17,11 @@ import pe.edu.upeu.pharmamobil.domain.usecase.EliminarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 
 import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
+import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
 
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.DetalleProductoViewModel
+import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
+
 expect val platformModule: Module
 
 // id real de la categoria "Medicamentos" creada en PharmaSoft (POST /api/v1/categorias)
@@ -36,6 +39,7 @@ val repositoryModule = module {
     single<ProductoRepository> {
         ProductoRepositorioRest(get(), CATEGORIA_POR_DEFECTO)
     }
+    single<AuthRepository> { AuthRepositorioRest(get(), get()) }
 }
 
 val useCaseModule = module {
