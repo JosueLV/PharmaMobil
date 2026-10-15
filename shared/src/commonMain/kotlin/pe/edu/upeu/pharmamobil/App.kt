@@ -209,7 +209,11 @@ private fun PantallaPrincipal(
 
                 Screen.Productos -> {
                     Column(modifier = Modifier.padding(paddingValues)) {
-                        val productoViewModel = koinViewModel<ProductoViewModel>()
+                        // un ViewModel por sesion: al iniciar sesion de nuevo se crea uno limpio y no
+                        // quedan el formulario ni los datos del usuario anterior
+                        val productoViewModel = koinViewModel<ProductoViewModel>(
+                            key = "producto-${sesion.token.hashCode()}"
+                        )
                         // al entrar (o al volver a iniciar sesion) se recarga con el token vigente
                         LaunchedEffect(sesion.usuario) { productoViewModel.cargarProductos() }
                         ProductoScreen(
@@ -272,4 +276,3 @@ private fun tituloPantalla(screen: Screen): String = when (screen) {
     Screen.Pedidos -> "Pedidos"
     Screen.AcercaDe -> "Acerca de"
 }
-
