@@ -17,7 +17,9 @@ import pe.edu.upeu.pharmamobil.domain.usecase.EliminarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 
 import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
+import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriver
 import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
+import pe.edu.upeu.pharmamobil.db.PharmaDb
 
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.DetalleProductoViewModel
 import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
@@ -44,6 +46,10 @@ val networkModule = module {
         )
     }
     single { ProductoApi(get()) }
+}
+
+val dataModule = module {
+    single { PharmaDb(get<CreadorDeDriver>().crear()) }
 }
 
 val repositoryModule = module {
@@ -73,6 +79,7 @@ fun initKoin(config: KoinAppDeclaration? = null) {
         modules(
             platformModule,
             networkModule,
+            dataModule,
             repositoryModule,
             useCaseModule,
             viewModelModule
