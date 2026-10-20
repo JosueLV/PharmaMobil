@@ -94,6 +94,27 @@ fun ProductoScreen(
         uiState.mensajeExito?.let {
             MensajeExito(it)
         }
+        uiState.avisoRed?.let { aviso ->
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(text = aviso, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
 
         if (operacion is Operacion.Fallida) {
             Surface(
@@ -121,10 +142,23 @@ fun ProductoScreen(
             }
         }
 
-        Text(
-            text = "Inventario",
-            style = MaterialTheme.typography.titleMedium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Inventario",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f)
+            )
+            if (uiState.sincronizando) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            } else {
+                FilledTonalButton(onClick = viewModel::sincronizar) {
+                    Text("Sincronizar")
+                }
+            }
+        }
 
         ScrollableTabRow(selectedTabIndex = tabSeleccionada) {
             titulosTabs.forEachIndexed { index, titulo ->
@@ -173,7 +207,7 @@ fun ProductoScreen(
                         colorIcono = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center),
                         accion = {
-                            FilledTonalButton(onClick = { viewModel.cargarProductos() }) {
+                            FilledTonalButton(onClick = { viewModel.sincronizar() }) {
                                 Text("Reintentar")
                             }
                         }

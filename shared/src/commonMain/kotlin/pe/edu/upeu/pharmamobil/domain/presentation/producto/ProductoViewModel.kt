@@ -28,30 +28,38 @@ class ProductoViewModel(
     private var productosDominio: List<Producto> = emptyList()
 
     init {
-        cargarProductos()
-    }
-
-    fun cargarProductos(mostrarCargando: Boolean = true) {
         viewModelScope.launch {
-            if (mostrarCargando) {
-                _uiState.update { it.copy(lista = ProductoListaEstado.Cargando) }
-            }
-            try {
-                val productos = productoRepository.listar()
+            productoRepository.observar().collect { productos ->
                 productosDominio = productos
                 _uiState.update {
                     it.copy(
-                        lista = if (productos.isEmpty())
-                            ProductoListaEstado.SinProductos
-                        else
-                            ProductoListaEstado.ConProductos(productos.map { it.toUi() })
+                        lista = when {
+                            productos.isNotEmpty() ->
+                                ProductoListaEstado.ConProductos(productos.map { p -> p.toUi() })
+                            it.sincronizando -> ProductoListaEstado.Cargando
+                            else -> ProductoListaEstado.SinProductos
+                        }
                     )
                 }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(lista = ProductoListaEstado.Error(e.message ?: "Error al cargar productos"))
+            }
+        }
+        sincronizar()
+    }
+
+    fun sincronizar() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(sincronizando = true) }
+            val aviso: String? = try {
+                productoRepository.sincronizar()
+                null
+            } catch (e: ErrorApiException) {
+                when (e.error) {
+                    ErrorApi.SinConexion, ErrorApi.TiempoAgotado ->
+                        "Sin conexión: mostrando datos guardados"
+                    else -> mensajeDeError(e.error)
                 }
             }
+            _uiState.update { it.copy(sincronizando = false, avisoRed = aviso) }
         }
     }
 
@@ -131,7 +139,7 @@ class ProductoViewModel(
                                 "Producto \"${producto.nombre}\" actualizado correctamente"
                         )
                     }
-                    cargarProductos(mostrarCargando = false)
+                    if (idEditando != null) sincronizar()
                 }
                 .onFailure { fallo -> manejarFalloFormulario(fallo) }
         }
@@ -144,7 +152,7 @@ class ProductoViewModel(
 
         eliminarProductoUseCase(id)
             .onSuccess {
-                cargarProductos(mostrarCargando = false)
+                sincronizar()
                 _uiState.update {
                     it.copy(operacion = Operacion.Inactiva, mensajeExito = "Producto eliminado")
                 }

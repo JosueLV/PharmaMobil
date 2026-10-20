@@ -215,7 +215,7 @@ private fun PantallaPrincipal(
                             key = "producto-${sesion.token.hashCode()}"
                         )
                         // al entrar (o al volver a iniciar sesion) se recarga con el token vigente
-                        LaunchedEffect(sesion.usuario) { productoViewModel.cargarProductos() }
+                        LaunchedEffect(sesion.usuario) { productoViewModel.sincronizar() }
                         ProductoScreen(
                             viewModel = productoViewModel,
                             // el boton de registrar (y editar/eliminar) solo con CATALOGO_ESCRIBIR
