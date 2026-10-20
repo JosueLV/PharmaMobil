@@ -44,6 +44,9 @@ class ProductoLocal(base: PharmaDb) {
             }
         }
     }
+    fun eliminar(id: Long) {
+        consultas.borrarPorId(id)
+    }
 }
 
 private fun FilaProducto.aDominio() = Producto(

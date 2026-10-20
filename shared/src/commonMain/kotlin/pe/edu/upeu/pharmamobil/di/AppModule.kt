@@ -9,7 +9,6 @@ import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
 import pe.edu.upeu.pharmamobil.data.remote.ProductoApi
 import pe.edu.upeu.pharmamobil.data.remote.crearHttpClient
-import pe.edu.upeu.pharmamobil.data.repository.ProductoRepositorioRest
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.ActualizarProductoUseCase
@@ -18,7 +17,9 @@ import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 
 import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
 import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriver
+import pe.edu.upeu.pharmamobil.data.local.ProductoLocal
 import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
+import pe.edu.upeu.pharmamobil.data.repository.ProductoRepositorioOffline
 import pe.edu.upeu.pharmamobil.db.PharmaDb
 
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.DetalleProductoViewModel
@@ -50,11 +51,12 @@ val networkModule = module {
 
 val dataModule = module {
     single { PharmaDb(get<CreadorDeDriver>().crear()) }
+    single { ProductoLocal(get()) }
 }
 
 val repositoryModule = module {
     single<ProductoRepository> {
-        ProductoRepositorioRest(get(), CATEGORIA_POR_DEFECTO)
+        ProductoRepositorioOffline(get(), get(), CATEGORIA_POR_DEFECTO)
     }
     single<AuthRepository> { AuthRepositorioRest(get(), get()) }
 }
