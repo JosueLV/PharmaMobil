@@ -56,6 +56,7 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation("androidx.security:security-crypto:1.1.0-alpha06")
             implementation(libs.sqldelight.android)
+            implementation(libs.sqldelight.jvm)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

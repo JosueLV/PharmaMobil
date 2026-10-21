@@ -72,19 +72,56 @@ class ProductoViewModelTest {
         assertIs<ProductoListaEstado.ConProductos>(estado)
         assertEquals(3, estado.productos.size)
     }
-
     @Test
-    fun repositorioConExcepcion_produceFaseError() = runTest(dispatcher) {
+    fun sinConexionAlSincronizar_muestraAvisoYConservaLaListaGuardada() = runTest(dispatcher) {
         val repositorio = FakeProductoRepository(
-            errorAlListar = Exception("Error simulado de conexión")
+            productosIniciales = listOf(
+                Producto(id = 1, nombre = "Paracetamol", precio = 15.50, stock = 100)
+            ),
+            errorAlSincronizar = ErrorApi.SinConexion
         )
         val viewModel = crearViewModel(repositorio)
 
         dispatcher.scheduler.advanceUntilIdle()
 
+        val estado = viewModel.uiState.value
+        assertIs<ProductoListaEstado.ConProductos>(estado.lista)
+        assertEquals(1, (estado.lista as ProductoListaEstado.ConProductos).productos.size)
+        assertEquals("Sin conexión: mostrando datos guardados", estado.avisoRed)
+        assertEquals(false, estado.sincronizando)
+    }
+
+    @Test
+    fun primeraAperturaSinRed_muestraEstadoVacioYAvisoNoPantallaDeError() = runTest(dispatcher) {
+        val repositorio = FakeProductoRepository(
+            productosIniciales = emptyList(),
+            errorAlSincronizar = ErrorApi.SinConexion
+        )
+        val viewModel = crearViewModel(repositorio)
+
+        dispatcher.scheduler.advanceUntilIdle()
+
+        val estado = viewModel.uiState.value
+        assertIs<ProductoListaEstado.SinProductos>(estado.lista)
+        assertEquals("Sin conexión: mostrando datos guardados", estado.avisoRed)
+    }
+
+    @Test
+    fun registrarProducto_apareceEnLaListaSinPedirlaDeNuevo() = runTest(dispatcher) {
+        val repositorio = FakeProductoRepository()
+        val viewModel = crearViewModel(repositorio)
+        dispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onNombreChange("Paracetamol")
+        viewModel.onPrecioChange("15.50")
+        viewModel.onStockChange("10")
+        viewModel.registrar()
+        dispatcher.scheduler.advanceUntilIdle()
+
         val estado = viewModel.uiState.value.lista
-        assertIs<ProductoListaEstado.Error>(estado)
-        assertEquals("Error simulado de conexión", estado.mensaje)
+        assertIs<ProductoListaEstado.ConProductos>(estado)
+        assertEquals(1, estado.productos.size)
+        assertEquals(0, repositorio.vecesQueSeListo) // nadie volvió a pedir la lista
     }
 
     @Test
@@ -132,7 +169,7 @@ class ProductoViewModelTest {
     }
 
     @Test
-    fun eliminacion_pasaPorEnCursoYTerminaInactivaConListaRecargada() = runTest(dispatcher) {
+    fun eliminacion_pasaPorEnCursoYTerminaInactivaConListaActualizada() = runTest(dispatcher) {
         val puerta = CompletableDeferred<Unit>()
         val repositorio = FakeProductoRepository(
             productosIniciales = listOf(

@@ -59,7 +59,14 @@ class ProductoViewModel(
                     else -> mensajeDeError(e.error)
                 }
             }
-            _uiState.update { it.copy(sincronizando = false, avisoRed = aviso) }
+            _uiState.update {
+                it.copy(
+                    sincronizando = false,
+                    avisoRed = aviso,
+                    lista = if (it.lista is ProductoListaEstado.Cargando)
+                        ProductoListaEstado.SinProductos else it.lista
+                )
+            }
         }
     }
 
