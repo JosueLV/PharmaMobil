@@ -10,6 +10,7 @@ import org.koin.dsl.module
 import pe.edu.upeu.pharmamobil.data.remote.ProductoApi
 import pe.edu.upeu.pharmamobil.data.remote.crearHttpClient
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
+import pe.edu.upeu.pharmamobil.domain.presentation.permiso.PermisosViewModel
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.ActualizarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.EliminarProductoUseCase
@@ -70,6 +71,7 @@ val useCaseModule = module {
 }
 
 val viewModelModule = module {
+    viewModelOf(::PermisosViewModel)
     viewModelOf(::ProductoViewModel)
     viewModelOf(::DetalleProductoViewModel)
     viewModelOf(::SesionViewModel)

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Medication
@@ -46,6 +47,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import pe.edu.upeu.pharmamobil.domain.model.Sesion
 import pe.edu.upeu.pharmamobil.domain.presentation.acercade.AcercaDeScreen
 import pe.edu.upeu.pharmamobil.domain.presentation.cliente.ClienteScreen
+import pe.edu.upeu.pharmamobil.domain.presentation.permiso.PermisosScreen
 import pe.edu.upeu.pharmamobil.domain.presentation.inicio.InicioScreen
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoScreen
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
@@ -156,6 +158,16 @@ private fun PantallaPrincipal(
                 )
 
                 NavigationDrawerItem(
+                    label = { Text("Permisos") },
+                    selected = pantallaActual is Screen.Permisos,
+                    onClick = {
+                        pantallaActual = Screen.Permisos
+                        scope.launch { drawerState.close() }
+                    },
+                    icon = { Icon(Icons.Default.CameraAlt, contentDescription = "Permisos") }
+                )
+
+                NavigationDrawerItem(
                     label = { Text("Acerca de") },
                     selected = pantallaActual is Screen.AcercaDe,
                     onClick = {
@@ -236,6 +248,10 @@ private fun PantallaPrincipal(
                     }
                 }
 
+                Screen.Permisos -> {
+                    Column(modifier = Modifier.padding(paddingValues)) { PermisosScreen() }
+                }
+
                 Screen.AcercaDe -> {
                     Column(modifier = Modifier.padding(paddingValues)) {
                         AcercaDeScreen()
@@ -275,4 +291,5 @@ private fun tituloPantalla(screen: Screen): String = when (screen) {
     Screen.Clientes -> "Clientes"
     Screen.Pedidos -> "Pedidos"
     Screen.AcercaDe -> "Acerca de"
+    Screen.Permisos -> "Permisos"
 }

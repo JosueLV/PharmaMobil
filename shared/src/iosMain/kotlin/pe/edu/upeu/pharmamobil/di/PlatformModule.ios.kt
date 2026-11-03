@@ -11,7 +11,11 @@ import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriverIos
 import pe.edu.upeu.pharmamobil.domain.platform.Compartidor
 import pe.edu.upeu.pharmamobil.platform.CompartidorIos
 
+import pe.edu.upeu.pharmamobil.data.permiso.GestorPermisosIos
+import pe.edu.upeu.pharmamobil.domain.permiso.GestorPermisos
+
 actual val platformModule: Module = module {
+    single<GestorPermisos> { GestorPermisosIos() }
     single<HttpClientEngine> { Darwin.create() }
     single<Compartidor> { CompartidorIos() }
     single<AlmacenSeguro> { AlmacenSeguroIos() }
