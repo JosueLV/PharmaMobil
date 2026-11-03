@@ -1,6 +1,7 @@
 package pe.edu.upeu.pharmamobil.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import pe.edu.upeu.pharmamobil.data.local.ProductoLocal
@@ -11,6 +12,7 @@ import pe.edu.upeu.pharmamobil.data.remote.ejecutarLlamada
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 import pe.edu.upeu.pharmamobil.domain.model.Producto
+import pe.edu.upeu.pharmamobil.domain.model.EstadoSincronizacion
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.SincronizarUseCase
 import kotlin.time.Clock
@@ -27,6 +29,14 @@ class ProductoRepositorioOffline(
 
     override fun observar(): Flow<List<Producto>> = local.observar()
     override fun observarUltimaSincronizacion(): Flow<Long?> = local.observarUltimaSincronizacion()
+
+    override fun observarEstadoSincronizacion(): Flow<EstadoSincronizacion> = combine(
+        local.observarPendientes(SincronizarUseCase.MAX_INTENTOS),
+        local.observarFallidas(SincronizarUseCase.MAX_INTENTOS),
+        local.observarUltimaSincronizacion()
+    ) { pendientes, fallidas, ultima ->
+        EstadoSincronizacion(pendientes.toInt(), fallidas.toInt(), ultima)
+    }
 
     override suspend fun registrar(producto: Producto): Producto {
         val guardado = local.guardarPendiente(producto)

@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,6 +64,22 @@ fun ProductoScreen(
     val idEnCursoEliminando = (operacion as? Operacion.EnCurso)
         ?.takeIf { it.tipo == Operacion.Tipo.Eliminar }
         ?.productoId
+
+    var reenvio by remember { mutableStateOf<ProductoUi?>(null) }
+    reenvio?.let { producto ->
+        AlertDialog(
+            onDismissRequest = { reenvio = null },
+            title = { Text("Revisar reenvío") },
+            text = { Text("${producto.nombre}\n${producto.ultimoError ?: "Pendiente de envío"}\n\n" +
+                "Comprueba en el servidor si ya existe. Si se perdió la respuesta anterior, " +
+                "reenviarlo podría duplicarlo. Si existe, cancela y concilia el registro antes de reenviar.") },
+            confirmButton = { TextButton(onClick = {
+                viewModel.reintentar(producto.id)
+                reenvio = null
+            }, enabled = !uiState.sincronizando) { Text("Verifiqué: reenviar") } },
+            dismissButton = { TextButton(onClick = { reenvio = null }) { Text("Cancelar") } }
+        )
+    }
 
     var detalleId by remember { mutableStateOf<Long?>(null) }
     detalleId?.let { id ->
@@ -152,6 +170,11 @@ fun ProductoScreen(
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = "Inventario", style = MaterialTheme.typography.titleMedium)
                 AntiguedadDatos(uiState.ultimaSincronizacion)
+                Text("${uiState.pendientes} por enviar · ${uiState.fallidas} fallidas",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (uiState.fallidas > 0) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(uiState.ultimaConexion, style = MaterialTheme.typography.labelSmall)
             }
             if (uiState.sincronizando) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -242,6 +265,7 @@ fun ProductoScreen(
                                     eliminando = idEnCursoEliminando == producto.id,
                                     mostrarAcciones = puedeEscribir,
                                     onClick = { detalleId = producto.id },
+                                    onReintentar = { reenvio = producto },
                                     onEditar = { viewModel.iniciarEdicion(producto.id) },
                                     onEliminar = { viewModel.eliminar(producto.id) }
                                 )
@@ -369,6 +393,7 @@ private fun ProductoItem(
     eliminando: Boolean,
     mostrarAcciones: Boolean,
     onClick: () -> Unit,
+    onReintentar: () -> Unit,
     onEditar: () -> Unit,
     onEliminar: () -> Unit
 ) {
@@ -404,10 +429,14 @@ private fun ProductoItem(
                 )
                 if (producto.pendiente) {
                     Text(
-                        text = "Pendiente de sincronizar",
+                        text = if (producto.fallida) "Envío fallido · revisar" else "Pendiente · ${producto.intentos} intentos",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary
+                        color = if (producto.fallida) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
                     )
+                    producto.ultimoError?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    if (mostrarAcciones) {
+                        TextButton(onClick = onReintentar) { Text("Revisar y reintentar") }
+                    }
                 }
             }
 
@@ -425,8 +454,8 @@ private fun ProductoItem(
                 }
             }
 
-            if (!mostrarAcciones || producto.pendiente) {
-                // Un pendiente aún no tiene un id válido para editar/eliminar en el servidor.
+            if (!mostrarAcciones) {
+                // Sin permiso de escritura, solo se muestra el detalle.
             } else if (eliminando) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             } else {

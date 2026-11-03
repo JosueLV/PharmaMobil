@@ -2,10 +2,13 @@ package pe.edu.upeu.pharmamobil.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import pe.edu.upeu.pharmamobil.domain.model.Producto
+import pe.edu.upeu.pharmamobil.domain.model.EstadoSincronizacion
 
 interface ProductoRepository {
     /** La pantalla se suscribe una vez y se actualiza sola. */
     fun observar(): Flow<List<Producto>>
+
+    fun observarEstadoSincronizacion(): Flow<EstadoSincronizacion>
 
     fun observarUltimaSincronizacion(): Flow<Long?>
 

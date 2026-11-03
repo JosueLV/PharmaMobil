@@ -37,4 +37,7 @@ data class ProductoUiState(
     val sincronizando: Boolean = false,
     val avisoRed: String? = null,
     val ultimaSincronizacion: Long? = null,
+    val pendientes: Int = 0,
+    val fallidas: Int = 0,
+    val ultimaConexion: String = "Conexión sin comprobar",
 )

@@ -29,8 +29,9 @@ class ProductoViewModel(
 
     init {
         viewModelScope.launch {
-            productoRepository.observarUltimaSincronizacion().collect { instante ->
-                _uiState.update { it.copy(ultimaSincronizacion = instante) }
+            productoRepository.observarEstadoSincronizacion().collect { estado ->
+                _uiState.update { it.copy(ultimaSincronizacion = estado.ultimaSync,
+                    pendientes = estado.pendientes, fallidas = estado.fallidas) }
             }
         }
         viewModelScope.launch {
@@ -52,12 +53,18 @@ class ProductoViewModel(
     }
 
     fun sincronizar() {
+        if (_uiState.value.sincronizando) return
         viewModelScope.launch {
             _uiState.update { it.copy(sincronizando = true) }
             val aviso: String? = try {
                 productoRepository.sincronizar()
+                _uiState.update { it.copy(ultimaConexion = "Última comprobación: con conexión") }
                 null
             } catch (e: ErrorApiException) {
+                _uiState.update { it.copy(ultimaConexion = when (e.error) {
+                    ErrorApi.SinConexion, ErrorApi.TiempoAgotado -> "Sin conexión con el servidor"
+                    else -> "El servidor respondió con un error"
+                }) }
                 when (e.error) {
                     ErrorApi.SinConexion, ErrorApi.TiempoAgotado ->
                         "Sin conexión: mostrando datos guardados"
@@ -71,6 +78,22 @@ class ProductoViewModel(
                     lista = if (it.lista is ProductoListaEstado.Cargando)
                         ProductoListaEstado.SinProductos else it.lista
                 )
+            }
+        }
+    }
+
+    fun reintentar(id: Long) {
+        if (_uiState.value.sincronizando) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(sincronizando = true, operacion = Operacion.Inactiva) }
+            try {
+                productoRepository.reintentar(id)
+                _uiState.update { it.copy(avisoRed = null,
+                    ultimaConexion = "Última comprobación: con conexión", mensajeExito = "Reintento completado") }
+            } catch (e: ErrorApiException) {
+                _uiState.update { it.copy(operacion = Operacion.Fallida(mensajeDeError(e.error))) }
+            } finally {
+                _uiState.update { it.copy(sincronizando = false) }
             }
         }
     }

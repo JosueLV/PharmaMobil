@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.update
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 import pe.edu.upeu.pharmamobil.domain.model.Producto
+import pe.edu.upeu.pharmamobil.domain.model.EstadoSincronizacion
 
 /**
  * Repositorio falso reutilizable para pruebas del ViewModel.
@@ -32,6 +33,8 @@ class FakeProductoRepository(
         private set
     var vecesQueSeListo: Int = 0
         private set
+
+    override fun observarEstadoSincronizacion(): Flow<EstadoSincronizacion> = flowOf(EstadoSincronizacion())
 
     override fun observar(): Flow<List<Producto>> = productos
 
