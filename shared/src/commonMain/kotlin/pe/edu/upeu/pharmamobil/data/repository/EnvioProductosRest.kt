@@ -25,7 +25,7 @@ class EnvioProductosRest(private val api: ProductoApi, private val categoria: Lo
         val productos = mutableListOf<Producto>()
         var pagina = 0
         do {
-            val respuesta = api.listar(pagina = pagina++, tamanio = 1000)
+            val respuesta = api.listar(pagina = pagina++, tamanio = 100)
             productos.addAll(respuesta.contenido.map { it.toDomain() })
         } while (!respuesta.ultima)
         productos

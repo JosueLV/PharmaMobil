@@ -244,7 +244,7 @@ class ProductoRepositorioOfflineTest {
         var rechazo: HttpStatusCode? = null
         var envios = 0
         var instante = 1_700_000_000_000L
-        var tamanioPagina = 1000
+        var tamanioPagina = 100
         var alDescargar: (() -> Unit)? = null
         private val json = Json { encodeDefaults = true }
         private val cabeceras = headersOf(HttpHeaders.ContentType, "application/json")
@@ -270,6 +270,9 @@ class ProductoRepositorioOfflineTest {
                     respond(json.encodeToString(creado), HttpStatusCode.Created, cabeceras)
                 }
                 HttpMethod.Get -> {
+                    val tamanioSolicitado = peticion.url.parameters["tamanio"]?.toIntOrNull()
+                    assertTrue(tamanioSolicitado != null && tamanioSolicitado in 1..100,
+                        "La API solo acepta tamaños de página entre 1 y 100")
                     if (fallaDescarga) throw IOException("Se perdió la red después del envío")
                     alDescargar?.also { alDescargar = null }?.invoke()
                     val pagina = peticion.url.parameters["pagina"]?.toInt() ?: 0
