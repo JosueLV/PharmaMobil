@@ -7,11 +7,12 @@ import app.cash.sqldelight.coroutines.mapToOne
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import pe.edu.upeu.pharmamobil.domain.port.ColaProductos
 import pe.edu.upeu.pharmamobil.db.PharmaDb
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.db.Producto as FilaProducto
 
-class ProductoLocal(private val base: PharmaDb) {
+class ProductoLocal(private val base: PharmaDb) : ColaProductos {
 
     private val consultas = base.productoQueries
 
@@ -32,7 +33,7 @@ class ProductoLocal(private val base: PharmaDb) {
         consultas.listarPendientes().executeAsList()
             .map { it.aDominio() }
 
-    fun pendientesPorEnviar(maxIntentos: Int, ahora: Long): List<Producto> =
+    override fun pendientesPorEnviar(maxIntentos: Int, ahora: Long): List<Producto> =
         consultas.pendientesPorEnviar(maxIntentos.toLong(), ahora).executeAsList().map { it.aDominio() }
 
     fun observarPendientes(maxIntentos: Int): Flow<Long> =
@@ -41,14 +42,14 @@ class ProductoLocal(private val base: PharmaDb) {
     fun observarFallidas(maxIntentos: Int): Flow<Long> =
         consultas.contarFallidas(maxIntentos.toLong()).asFlow().mapToOne(Dispatchers.Default)
 
-    fun contarPendientes(maxIntentos: Int): Int =
+    override fun contarPendientes(maxIntentos: Int): Int =
         consultas.contarPendientes(maxIntentos.toLong()).executeAsOne().toInt()
 
-    fun sumarIntento(id: Long, motivo: String, proximo: Long, confirmacion: Boolean) {
+    override fun sumarIntento(id: Long, motivo: String, proximo: Long, confirmacion: Boolean) {
         consultas.sumarIntento(motivo, proximo, if (confirmacion) 1L else 0L, id)
     }
 
-    fun marcarFallida(id: Long, motivo: String, maxIntentos: Int) {
+    override fun marcarFallida(id: Long, motivo: String, maxIntentos: Int) {
         consultas.marcarFallida(maxIntentos.toLong(), motivo, id)
     }
 
@@ -72,7 +73,7 @@ class ProductoLocal(private val base: PharmaDb) {
         return local
     }
 
-    fun reemplazarSincronizados(productos: List<Producto>, instante: Long? = null) {
+    override fun reemplazarSincronizados(productos: List<Producto>, instante: Long?) {
         base.transaction {
             consultas.borrarSincronizados()
             productos.forEach {
@@ -86,7 +87,7 @@ class ProductoLocal(private val base: PharmaDb) {
     }
 
     /** Conserva la respuesta del POST aunque la descarga siguiente falle. */
-    fun confirmarEnvio(idLocal: Long, producto: Producto) {
+    override fun confirmarEnvio(idLocal: Long, producto: Producto) {
         consultas.transaction {
             consultas.borrarPorId(idLocal)
             consultas.insertar(

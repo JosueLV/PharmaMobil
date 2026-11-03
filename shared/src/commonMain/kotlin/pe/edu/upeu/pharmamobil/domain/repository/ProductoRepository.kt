@@ -12,6 +12,9 @@ interface ProductoRepository {
     /** Sube lo pendiente y luego trae la lista del servidor. */
     suspend fun sincronizar()
 
+    /** Reenvío solicitado explícitamente tras revisar el posible envío anterior. */
+    suspend fun reintentar(id: Long)
+
     suspend fun listar(): List<Producto>
     suspend fun obtener(id: Long): Producto
     suspend fun registrar(producto: Producto): Producto

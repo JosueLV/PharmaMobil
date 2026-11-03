@@ -12,6 +12,7 @@ import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
+import pe.edu.upeu.pharmamobil.domain.usecase.SincronizarUseCase
 import kotlin.time.Clock
 
 class ProductoRepositorioOffline(
@@ -20,68 +21,66 @@ class ProductoRepositorioOffline(
     private val categoriaPorDefecto: Long,
     private val ahora: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) : ProductoRepository {
-
     private val mutexSincronizacion = Mutex()
+    private val remoto = EnvioProductosRest(api, categoriaPorDefecto)
+    private val sincronizarCaso = SincronizarUseCase(local, remoto, ahora)
 
     override fun observar(): Flow<List<Producto>> = local.observar()
-
     override fun observarUltimaSincronizacion(): Flow<Long?> = local.observarUltimaSincronizacion()
 
     override suspend fun registrar(producto: Producto): Producto {
         val guardado = local.guardarPendiente(producto)
-        intentar { sincronizar() }
-        return guardado
+        try {
+            mutexSincronizacion.withLock {
+                val resumen = sincronizarCaso()
+                resumen.errores[guardado.id]?.let { throw ErrorApiException(it) }
+            }
+        } catch (e: ErrorApiException) {
+            when (e.error) {
+                ErrorApi.SinConexion, ErrorApi.TiempoAgotado, ErrorApi.Servidor -> Unit
+                else -> throw e
+            }
+        }
+        return local.obtener(guardado.id) ?: guardado
     }
 
     override suspend fun sincronizar() {
         mutexSincronizacion.withLock {
-            ejecutarLlamada {
-                subirPendientes() // 1. primero subir
-                // La fecha y la lista cambian juntas solo cuando termina toda la descarga.
-                local.reemplazarSincronizados(descargar(), ahora())
-            }.getOrThrow()
+            val resumen = sincronizarCaso()
+            resumen.errores.values.firstOrNull()?.let { throw ErrorApiException(it) }
         }
     }
 
-    private suspend fun descargar(): List<Producto> = ejecutarLlamada {
-        val productos = mutableListOf<Producto>()
-        var pagina = 0
-        do {
-            val respuesta = api.listar(pagina = pagina++, tamanio = 1000)
-            productos.addAll(respuesta.contenido.map { it.toDomain() })
-        } while (!respuesta.ultima)
-        productos
-    }.getOrThrow()
-
-    private suspend fun subirPendientes() {
-        local.pendientes().forEach { pendiente ->
-            val creado = api.crear(pendiente.toRequest(categoriaPorDefecto)).toDomain()
-            local.confirmarEnvio(pendiente.id, creado)
-        }
-    }
-
-    /** Un fallo de red no debe tumbar la operación local. */
-    private suspend fun intentar(bloque: suspend () -> Unit) {
-        try {
-            bloque()
-        } catch (e: ErrorApiException) {
-            when (e.error) {
-                ErrorApi.SinConexion, ErrorApi.TiempoAgotado -> {
-                    // Queda pendiente; se reintentará al sincronizar.
-                }
-                else -> throw e // otros errores (401, 403, 500...) sí deben verse
+    override suspend fun reintentar(id: Long) {
+        mutexSincronizacion.withLock {
+            val producto = local.obtener(id) ?: throw ErrorApiException(ErrorApi.NoEncontrado)
+            if (!producto.pendiente) return@withLock
+            if (producto.proximoIntento > ahora()) {
+                val segundos = (producto.proximoIntento - ahora() + 999L) / 1_000L
+                throw ErrorApiException(ErrorApi.Conflicto("Espera $segundos segundos antes de reintentar"))
             }
+            local.autorizarReintento(id, SincronizarUseCase.MAX_INTENTOS, ahora())
+            val resumen = sincronizarCaso()
+            resumen.errores[id]?.let { throw ErrorApiException(it) }
         }
     }
 
-    // Operaciones que siguen yendo al servidor (no son parte del criterio offline-first)
-    override suspend fun listar(): List<Producto> = descargar()
-
+    override suspend fun listar(): List<Producto> = remoto.listar()
     override suspend fun obtener(id: Long): Producto =
         local.obtener(id) ?: ejecutarLlamada { api.obtener(id).toDomain() }.getOrThrow()
 
-    override suspend fun actualizar(producto: Producto): Producto =
-        api.actualizar(producto.id, producto.toRequest(categoriaPorDefecto)).toDomain()
+    override suspend fun actualizar(producto: Producto): Producto = mutexSincronizacion.withLock {
+        if (local.obtener(producto.id)?.pendiente == true) {
+            local.actualizarPendiente(producto)
+        } else {
+            ejecutarLlamada { api.actualizar(producto.id, producto.toRequest(categoriaPorDefecto)).toDomain() }.getOrThrow()
+        }
+    }
 
-    override suspend fun eliminar(id: Long) = api.eliminar(id)
+    override suspend fun eliminar(id: Long) {
+        mutexSincronizacion.withLock {
+            if (local.obtener(id)?.pendiente == true) local.eliminar(id)
+            else ejecutarLlamada { api.eliminar(id) }.getOrThrow()
+        }
+    }
 }

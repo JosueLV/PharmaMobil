@@ -37,6 +37,8 @@ class FakeProductoRepository(
 
     override fun observarUltimaSincronizacion(): Flow<Long?> = flowOf(null)
 
+    override suspend fun reintentar(id: Long) { sincronizar() }
+
     override suspend fun sincronizar() {
         errorAlSincronizar?.let { throw ErrorApiException(it) }
     }
