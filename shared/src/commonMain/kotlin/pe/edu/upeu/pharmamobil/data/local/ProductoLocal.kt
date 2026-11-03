@@ -45,6 +45,8 @@ class ProductoLocal(private val base: PharmaDb) : ColaProductos {
     override fun contarPendientes(maxIntentos: Int): Int =
         consultas.contarPendientes(maxIntentos.toLong()).executeAsOne().toInt()
 
+    override fun marcarEnviando(id: Long) { consultas.marcarEnviando(id) }
+
     override fun sumarIntento(id: Long, motivo: String, proximo: Long, confirmacion: Boolean) {
         consultas.sumarIntento(motivo, proximo, if (confirmacion) 1L else 0L, id)
     }

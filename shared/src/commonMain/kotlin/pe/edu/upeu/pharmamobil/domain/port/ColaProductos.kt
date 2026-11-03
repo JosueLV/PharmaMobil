@@ -6,6 +6,7 @@ import pe.edu.upeu.pharmamobil.domain.model.ResultadoEnvio
 interface ColaProductos {
     fun pendientesPorEnviar(maxIntentos: Int, ahora: Long): List<Producto>
     fun contarPendientes(maxIntentos: Int): Int
+    fun marcarEnviando(id: Long)
     fun sumarIntento(id: Long, motivo: String, proximo: Long, confirmacion: Boolean)
     fun marcarFallida(id: Long, motivo: String, maxIntentos: Int)
     fun confirmarEnvio(idLocal: Long, producto: Producto)

@@ -45,7 +45,7 @@ fun AcercaDeScreen() {
                     telemetria.registrarEvento("prueba_integrador", mapOf("pantalla" to "diagnostico"))
                     telemetria.registrarError(IllegalStateException("Prueba controlada"),
                         mapOf("pantalla" to "diagnostico", "operacion" to "prueba"))
-                    resultadoPrueba = "Prueba registrada localmente. Reinicia la app con conexión y comprueba Crashlytics."
+                    resultadoPrueba = "Se solicitó registrar la prueba. Reinicia la app con conexión y comprueba su recepción en Crashlytics."
                 }) { Text("Registrar prueba técnica") }
                 resultadoPrueba?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 

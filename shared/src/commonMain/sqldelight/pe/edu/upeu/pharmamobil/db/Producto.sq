@@ -65,3 +65,8 @@ actualizarPendiente:
 UPDATE producto SET nombre = :nombre, precio = :precio, stock = :stock, activo = :activo,
     intentos = 0, ultimoError = NULL, proximoIntento = 0, requiereConfirmacion = 1
 WHERE id = :id AND pendiente = 1;
+
+marcarEnviando:
+UPDATE producto SET requiereConfirmacion = 1,
+    ultimoError = 'Envío iniciado: si se interrumpió, comprueba el servidor antes de reenviar'
+WHERE id = ? AND pendiente = 1;

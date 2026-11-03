@@ -17,6 +17,8 @@ class SincronizarUseCase(
         var fallidas = 0
         val errores = mutableMapOf<Long, ErrorApi>()
         for (fila in local.pendientesPorEnviar(MAX_INTENTOS, ahora())) {
+            // Persistir antes del POST protege también ante cancelación o cierre inesperado.
+            local.marcarEnviando(fila.id)
             when (val resultado = remoto.enviar(fila)) {
                 is ResultadoEnvio.Exito -> {
                     local.confirmarEnvio(fila.id, resultado.producto)

@@ -23,11 +23,14 @@ class MigracionOfflineTest {
             driver.execute(null, "INSERT INTO producto VALUES (-1, 'Pendiente', 4.5, 20, 1)", 0)
             driver.execute(null, "INSERT INTO producto VALUES (1, 'Remoto', 2.0, 50, 0)", 0)
 
-            PharmaDb.Schema.migrate(driver, 1L, 2L)
+            PharmaDb.Schema.migrate(driver, 1L, PharmaDb.Schema.version)
             val base = PharmaDb(driver)
             val filas = base.productoQueries.listarTodos().executeAsList()
 
             assertEquals(2, filas.size)
+            assertEquals(listOf(0L, 0L), filas.map { it.intentos })
+            assertEquals(listOf(null, null), filas.map { it.ultimoError })
+            assertEquals(listOf(0L, 0L), filas.map { it.requiereConfirmacion })
             assertEquals(1L, filas.single { it.id == -1L }.pendiente)
             assertEquals(0L, filas.single { it.id == 1L }.pendiente)
             assertEquals(listOf(1L, 1L), filas.map { it.activo })

@@ -71,13 +71,14 @@ class ProductoRepositorioOfflineTest {
     }
 
     @Test
-    fun envioAlReconectar_enviaElPendienteYLoSustituyePorElIdReal() = runTest {
+    fun envioConfirmadoAlReconectar_sustituyeElPendientePorElIdReal() = runTest {
         conRepositorio {
             conectado = false
             val pendiente = repositorio.registrar(productoNuevo())
             conectado = true
+            instante = pendiente.proximoIntento
 
-            repositorio.sincronizar()
+            repositorio.reintentar(pendiente.id)
 
             val guardado = repositorio.observar().first().single()
             assertEquals(servidor.single().toDomain(), guardado)
@@ -129,9 +130,7 @@ class ProductoRepositorioOfflineTest {
     @Test
     fun sincronizarDosVecesNoDuplica_niReenviaElProductoConfirmado() = runTest {
         conRepositorio {
-            conectado = false
-            repositorio.registrar(productoNuevo())
-            conectado = true
+            local.guardarPendiente(productoNuevo())
             repositorio.sincronizar()
             val primeraLista = repositorio.observar().first()
 
@@ -151,8 +150,9 @@ class ProductoRepositorioOfflineTest {
             repositorio.sincronizar()
             val fechaAnterior = instante
             conectado = false
-            repositorio.registrar(productoNuevo())
+            val pendiente = repositorio.registrar(productoNuevo())
             conectado = true
+            local.autorizarReintento(pendiente.id, 5, pendiente.proximoIntento)
             fallaDescarga = true
             instante += 60_000L
 
@@ -186,9 +186,7 @@ class ProductoRepositorioOfflineTest {
     @Test
     fun sincronizacionesConcurrentes_noEnvianDosVecesLaMismaFila() = runTest {
         conRepositorio {
-            conectado = false
-            repositorio.registrar(productoNuevo())
-            conectado = true
+            local.guardarPendiente(productoNuevo())
 
             val primera = async { repositorio.sincronizar() }
             val segunda = async { repositorio.sincronizar() }
@@ -207,6 +205,21 @@ class ProductoRepositorioOfflineTest {
             val error = assertFailsWith<ErrorApiException> { repositorio.sincronizar() }
             assertEquals(ErrorApi.SinPermiso, error.error)
             assertNull(repositorio.observarUltimaSincronizacion().first())
+        }
+    }
+
+    @Test
+    fun resumenObservable_separaPendientesFallidasYFecha() = runTest {
+        conRepositorio {
+            assertEquals(0, repositorio.observarEstadoSincronizacion().first().pendientes)
+            val fallida = local.guardarPendiente(productoNuevo())
+            local.guardarPendiente(productoNuevo().copy(nombre = "Otro"))
+            local.marcarFallida(fallida.id, "Conflicto", 5)
+            local.reemplazarSincronizados(emptyList(), instante)
+            val estado = repositorio.observarEstadoSincronizacion().first()
+            assertEquals(1, estado.pendientes)
+            assertEquals(1, estado.fallidas)
+            assertEquals(instante, estado.ultimaSync)
         }
     }
 
