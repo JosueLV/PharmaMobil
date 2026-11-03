@@ -60,6 +60,7 @@ kotlin {
             implementation(libs.sqldelight.android)
         }
         commonMain.dependencies {
+            implementation("dev.gitlive:firebase-crashlytics:2.7.0")
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

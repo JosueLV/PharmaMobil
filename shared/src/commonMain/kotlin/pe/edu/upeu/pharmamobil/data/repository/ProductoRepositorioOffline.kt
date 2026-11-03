@@ -15,13 +15,16 @@ import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.model.EstadoSincronizacion
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.usecase.SincronizarUseCase
+import pe.edu.upeu.pharmamobil.domain.port.Telemetria
+import pe.edu.upeu.pharmamobil.domain.port.TelemetriaNula
 import kotlin.time.Clock
 
 class ProductoRepositorioOffline(
     private val local: ProductoLocal,
     private val api: ProductoApi,
     private val categoriaPorDefecto: Long,
-    private val ahora: () -> Long = { Clock.System.now().toEpochMilliseconds() }
+    private val ahora: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    private val telemetria: Telemetria = TelemetriaNula
 ) : ProductoRepository {
     private val mutexSincronizacion = Mutex()
     private val remoto = EnvioProductosRest(api, categoriaPorDefecto)
@@ -42,7 +45,7 @@ class ProductoRepositorioOffline(
         val guardado = local.guardarPendiente(producto)
         try {
             mutexSincronizacion.withLock {
-                val resumen = sincronizarCaso()
+                val resumen = sincronizarConRegistro()
                 resumen.errores[guardado.id]?.let { throw ErrorApiException(it) }
             }
         } catch (e: ErrorApiException) {
@@ -56,8 +59,23 @@ class ProductoRepositorioOffline(
 
     override suspend fun sincronizar() {
         mutexSincronizacion.withLock {
-            val resumen = sincronizarCaso()
+            val resumen = sincronizarConRegistro()
             resumen.errores.values.firstOrNull()?.let { throw ErrorApiException(it) }
+        }
+    }
+
+    private suspend fun sincronizarConRegistro(): pe.edu.upeu.pharmamobil.domain.model.ResumenSync {
+        return try {
+            val resumen = sincronizarCaso()
+            resumen.errores.values.forEach {
+                telemetria.registrarError(ErrorApiException(it), mapOf("pantalla" to "productos", "operacion" to "sincronizar"))
+            }
+            telemetria.registrarEvento("sincronizacion_completada", mapOf("pantalla" to "productos",
+                "resultado" to if (resumen.errores.isEmpty()) "correcto" else "pendiente"))
+            resumen
+        } catch (e: ErrorApiException) {
+            telemetria.registrarError(e, mapOf("pantalla" to "productos", "operacion" to "sincronizar"))
+            throw e
         }
     }
 
@@ -70,7 +88,7 @@ class ProductoRepositorioOffline(
                 throw ErrorApiException(ErrorApi.Conflicto("Espera $segundos segundos antes de reintentar"))
             }
             local.autorizarReintento(id, SincronizarUseCase.MAX_INTENTOS, ahora())
-            val resumen = sincronizarCaso()
+            val resumen = sincronizarConRegistro()
             resumen.errores[id]?.let { throw ErrorApiException(it) }
         }
     }

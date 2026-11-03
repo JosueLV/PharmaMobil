@@ -7,6 +7,8 @@ import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.dsl.KoinAppDeclaration
 import org.koin.dsl.module
+import pe.edu.upeu.pharmamobil.domain.port.Telemetria
+import pe.edu.upeu.pharmamobil.data.firebase.TelemetriaFirebase
 import pe.edu.upeu.pharmamobil.data.remote.ProductoApi
 import pe.edu.upeu.pharmamobil.data.remote.crearHttpClient
 import pe.edu.upeu.pharmamobil.domain.presentation.producto.ProductoViewModel
@@ -56,8 +58,9 @@ val dataModule = module {
 }
 
 val repositoryModule = module {
+    single<Telemetria> { TelemetriaFirebase() }
     single<ProductoRepository> {
-        ProductoRepositorioOffline(get(), get(), CATEGORIA_POR_DEFECTO)
+        ProductoRepositorioOffline(get(), get(), CATEGORIA_POR_DEFECTO, telemetria = get())
     }
     single<AuthRepository> { AuthRepositorioRest(get(), get()) }
 }
