@@ -3,6 +3,7 @@ package pe.edu.upeu.pharmamobil.domain.repository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
@@ -33,6 +34,8 @@ class FakeProductoRepository(
         private set
 
     override fun observar(): Flow<List<Producto>> = productos
+
+    override fun observarUltimaSincronizacion(): Flow<Long?> = flowOf(null)
 
     override suspend fun sincronizar() {
         errorAlSincronizar?.let { throw ErrorApiException(it) }

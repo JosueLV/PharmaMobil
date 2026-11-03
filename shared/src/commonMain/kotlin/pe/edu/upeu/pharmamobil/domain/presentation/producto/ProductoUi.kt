@@ -9,7 +9,8 @@ data class ProductoUi(
     val precio: String,          // ya formateado: "S/ 12.50"
     val stock: Int,
     val activo: Boolean,
-    val requiereReposicion: Boolean
+    val requiereReposicion: Boolean,
+    val pendiente: Boolean = false
 )
 
 fun Producto.toUi() = ProductoUi(
@@ -18,5 +19,6 @@ fun Producto.toUi() = ProductoUi(
     precio = formatearSoles(precio),
     stock = stock,
     activo = activo,
-    requiereReposicion = requiereReposicion()
+    requiereReposicion = requiereReposicion(),
+    pendiente = pendiente
 )

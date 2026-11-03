@@ -31,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
+import kotlin.time.Clock
 import pe.edu.upeu.pharmamobil.domain.presentation.components.EstadoVacio
 import pe.edu.upeu.pharmamobil.domain.presentation.components.MensajeExito
 import pe.edu.upeu.pharmamobil.domain.presentation.components.ValidatedTextField
@@ -146,11 +149,10 @@ fun ProductoScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Inventario",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Inventario", style = MaterialTheme.typography.titleMedium)
+                AntiguedadDatos(uiState.ultimaSincronizacion)
+            }
             if (uiState.sincronizando) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             } else {
@@ -250,6 +252,22 @@ fun ProductoScreen(
             }
         }
     }
+}
+
+@Composable
+private fun AntiguedadDatos(ultimaSincronizacion: Long?) {
+    var ahora by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+    LaunchedEffect(ultimaSincronizacion) {
+        while (true) {
+            ahora = Clock.System.now().toEpochMilliseconds()
+            delay(60_000L)
+        }
+    }
+    Text(
+        text = textoUltimaSincronizacion(ultimaSincronizacion, ahora),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
@@ -384,6 +402,13 @@ private fun ProductoItem(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (producto.pendiente) {
+                    Text(
+                        text = "Pendiente de sincronizar",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
 
             if (producto.requiereReposicion) {
@@ -400,8 +425,8 @@ private fun ProductoItem(
                 }
             }
 
-            if (!mostrarAcciones) {
-                // sin el permiso CATALOGO_ESCRIBIR la tarjeta es solo de lectura
+            if (!mostrarAcciones || producto.pendiente) {
+                // Un pendiente aún no tiene un id válido para editar/eliminar en el servidor.
             } else if (eliminando) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
             } else {

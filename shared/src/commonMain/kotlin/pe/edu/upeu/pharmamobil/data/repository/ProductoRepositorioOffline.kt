@@ -1,22 +1,31 @@
 package pe.edu.upeu.pharmamobil.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import pe.edu.upeu.pharmamobil.data.local.ProductoLocal
 import pe.edu.upeu.pharmamobil.data.mapper.toDomain
 import pe.edu.upeu.pharmamobil.data.mapper.toRequest
 import pe.edu.upeu.pharmamobil.data.remote.ProductoApi
+import pe.edu.upeu.pharmamobil.data.remote.ejecutarLlamada
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApi
 import pe.edu.upeu.pharmamobil.domain.error.ErrorApiException
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
+import kotlin.time.Clock
 
 class ProductoRepositorioOffline(
     private val local: ProductoLocal,
     private val api: ProductoApi,
-    private val categoriaPorDefecto: Long
+    private val categoriaPorDefecto: Long,
+    private val ahora: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) : ProductoRepository {
 
+    private val mutexSincronizacion = Mutex()
+
     override fun observar(): Flow<List<Producto>> = local.observar()
+
+    override fun observarUltimaSincronizacion(): Flow<Long?> = local.observarUltimaSincronizacion()
 
     override suspend fun registrar(producto: Producto): Producto {
         val guardado = local.guardarPendiente(producto)
@@ -25,17 +34,29 @@ class ProductoRepositorioOffline(
     }
 
     override suspend fun sincronizar() {
-        subirPendientes()                          // 1. primero subir
-        local.reemplazarSincronizados(descargar()) // 2. después bajar
+        mutexSincronizacion.withLock {
+            ejecutarLlamada {
+                subirPendientes() // 1. primero subir
+                // La fecha y la lista cambian juntas solo cuando termina toda la descarga.
+                local.reemplazarSincronizados(descargar(), ahora())
+            }.getOrThrow()
+        }
     }
 
-    private suspend fun descargar(): List<Producto> =
-        api.listar(tamanio = 1000).contenido.map { it.toDomain() }
+    private suspend fun descargar(): List<Producto> = ejecutarLlamada {
+        val productos = mutableListOf<Producto>()
+        var pagina = 0
+        do {
+            val respuesta = api.listar(pagina = pagina++, tamanio = 1000)
+            productos.addAll(respuesta.contenido.map { it.toDomain() })
+        } while (!respuesta.ultima)
+        productos
+    }.getOrThrow()
 
     private suspend fun subirPendientes() {
         local.pendientes().forEach { pendiente ->
-            api.crear(pendiente.toRequest(categoriaPorDefecto))
-            local.eliminar(pendiente.id) // ya está en el servidor, vuelve en la lista con su id real
+            val creado = api.crear(pendiente.toRequest(categoriaPorDefecto)).toDomain()
+            local.confirmarEnvio(pendiente.id, creado)
         }
     }
 
@@ -57,7 +78,7 @@ class ProductoRepositorioOffline(
     override suspend fun listar(): List<Producto> = descargar()
 
     override suspend fun obtener(id: Long): Producto =
-        api.obtener(id).toDomain()
+        local.obtener(id) ?: ejecutarLlamada { api.obtener(id).toDomain() }.getOrThrow()
 
     override suspend fun actualizar(producto: Producto): Producto =
         api.actualizar(producto.id, producto.toRequest(categoriaPorDefecto)).toDomain()

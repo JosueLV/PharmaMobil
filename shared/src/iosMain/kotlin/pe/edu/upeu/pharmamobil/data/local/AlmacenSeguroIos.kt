@@ -38,18 +38,26 @@ import platform.Security.kSecValueData
 
 class AlmacenSeguroIos : AlmacenSeguro {
 
-    override fun guardarToken(token: String) {
-        borrarToken()
-        val datos = NSString.create(string = token)
+    override fun guardarToken(token: String) = guardar("jwt", token)
+    override fun leerToken(): String? = leer("jwt")
+    override fun borrarToken() = borrar("jwt")
+
+    override fun guardarSesion(sesion: String) = guardar("ultima_sesion_validada", sesion)
+    override fun leerSesion(): String? = leer("ultima_sesion_validada")
+    override fun borrarSesion() = borrar("ultima_sesion_validada")
+
+    private fun guardar(clave: String, valor: String) {
+        borrar(clave)
+        val datos = NSString.create(string = valor)
             .dataUsingEncoding(NSUTF8StringEncoding) ?: return
-        val consulta = consultaBase()
+        val consulta = consultaBase(clave)
         CFDictionaryAddValue(consulta, kSecValueData, CFBridgingRetain(datos))
         SecItemAdd(consulta, null)
         CFRelease(consulta)
     }
 
-    override fun leerToken(): String? = memScoped {
-        val consulta = consultaBase()
+    private fun leer(clave: String): String? = memScoped {
+        val consulta = consultaBase(clave)
         CFDictionaryAddValue(consulta, kSecReturnData, kCFBooleanTrue)
         CFDictionaryAddValue(consulta, kSecMatchLimit, kSecMatchLimitOne)
         val resultado = alloc<CFTypeRefVar>()
@@ -60,13 +68,13 @@ class AlmacenSeguroIos : AlmacenSeguro {
         datos?.let { NSString.create(data = it, encoding = NSUTF8StringEncoding)?.toString() }
     }
 
-    override fun borrarToken() {
-        val consulta = consultaBase()
+    private fun borrar(clave: String) {
+        val consulta = consultaBase(clave)
         SecItemDelete(consulta)
         CFRelease(consulta)
     }
 
-    private fun consultaBase(): CFMutableDictionaryRef? {
+    private fun consultaBase(clave: String): CFMutableDictionaryRef? {
         val d = CFDictionaryCreateMutable(
             null, 0,
             kCFTypeDictionaryKeyCallBacks.ptr,
@@ -74,7 +82,7 @@ class AlmacenSeguroIos : AlmacenSeguro {
         )
         CFDictionaryAddValue(d, kSecClass, kSecClassGenericPassword)
         CFDictionaryAddValue(d, kSecAttrService, CFBridgingRetain("pharmamobil"))
-        CFDictionaryAddValue(d, kSecAttrAccount, CFBridgingRetain("jwt"))
+        CFDictionaryAddValue(d, kSecAttrAccount, CFBridgingRetain(clave))
         return d
     }
 }

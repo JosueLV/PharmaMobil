@@ -7,6 +7,8 @@ import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
 import pe.edu.upeu.pharmamobil.data.mapper.aSesion
 import pe.edu.upeu.pharmamobil.data.remote.aErrorSesion
@@ -34,7 +36,7 @@ class AuthRepositorioRest(
         almacen.guardarToken(dto.token)
         // loadTokens guarda el valor en cache: hay que limpiarlo para que lea el nuevo token
         limpiarCacheDelToken()
-        return dto.aSesion()
+        return dto.aSesion().also { almacen.guardarSesion(Json.encodeToString(it)) }
     }
 
     override suspend fun sesionGuardada(): Sesion? {
@@ -45,10 +47,19 @@ class AuthRepositorioRest(
         }
 
         return resultado.fold(
-            onSuccess = { usuario -> usuario.aSesion(token) },
+            onSuccess = { usuario ->
+                usuario.aSesion(token).also { almacen.guardarSesion(Json.encodeToString(it)) }
+            },
             onFailure = { fallo ->
                 val excepcion = fallo.aErrorSesion()
-                if (excepcion.error == ErrorSesion.SesionExpirada) {
+                if (excepcion.error == ErrorSesion.SinConexion) {
+                    // Sin respuesta del servidor no se considera vencida la sesión.
+                    // Solo se restaura una sesión validada previamente con este mismo token.
+                    val guardada = almacen.leerSesion()?.let { contenido ->
+                        runCatching { Json.decodeFromString<Sesion>(contenido) }.getOrNull()
+                    }
+                    guardada?.takeIf { it.token == token } ?: throw excepcion
+                } else if (excepcion.error == ErrorSesion.SesionExpirada) {
                     // el token ya no sirve: se borra y se pide iniciar sesion de nuevo
                     cerrarSesion()
                     null
@@ -60,6 +71,7 @@ class AuthRepositorioRest(
     }
 
     override suspend fun cerrarSesion() {
+        almacen.borrarSesion()
         almacen.borrarToken()
         limpiarCacheDelToken()
     }

@@ -26,5 +26,16 @@ class AlmacenSeguroAndroid(contexto: Context) : AlmacenSeguro {
     override fun borrarToken() =
         prefs.edit().remove(CLAVE).apply()
 
-    private companion object { const val CLAVE = "jwt" }
+    override fun guardarSesion(sesion: String) =
+        prefs.edit().putString(CLAVE_SESION, sesion).apply()
+
+    override fun leerSesion(): String? = prefs.getString(CLAVE_SESION, null)
+
+    override fun borrarSesion() =
+        prefs.edit().remove(CLAVE_SESION).apply()
+
+    private companion object {
+        const val CLAVE = "jwt"
+        const val CLAVE_SESION = "ultima_sesion_validada"
+    }
 }

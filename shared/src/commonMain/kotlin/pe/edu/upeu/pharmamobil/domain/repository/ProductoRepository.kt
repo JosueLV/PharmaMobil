@@ -7,6 +7,8 @@ interface ProductoRepository {
     /** La pantalla se suscribe una vez y se actualiza sola. */
     fun observar(): Flow<List<Producto>>
 
+    fun observarUltimaSincronizacion(): Flow<Long?>
+
     /** Sube lo pendiente y luego trae la lista del servidor. */
     suspend fun sincronizar()
 

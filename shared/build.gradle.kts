@@ -56,7 +56,6 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation("androidx.security:security-crypto:1.1.0-alpha06")
             implementation(libs.sqldelight.android)
-            implementation(libs.sqldelight.jvm)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -88,6 +87,11 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
+        }
+        val androidHostTest by getting {
+            dependencies {
+                implementation(libs.sqldelight.jvm)
+            }
         }
 
         // Bloque agregado para solucionar el crash de AndroidJUnitRunner

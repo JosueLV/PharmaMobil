@@ -29,6 +29,11 @@ class ProductoViewModel(
 
     init {
         viewModelScope.launch {
+            productoRepository.observarUltimaSincronizacion().collect { instante ->
+                _uiState.update { it.copy(ultimaSincronizacion = instante) }
+            }
+        }
+        viewModelScope.launch {
             productoRepository.observar().collect { productos ->
                 productosDominio = productos
                 _uiState.update {
