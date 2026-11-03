@@ -3,6 +3,7 @@ package pe.edu.upeu.pharmamobil.data.local
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
+import app.cash.sqldelight.coroutines.mapToOne
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -30,6 +31,36 @@ class ProductoLocal(private val base: PharmaDb) {
     fun pendientes(): List<Producto> =
         consultas.listarPendientes().executeAsList()
             .map { it.aDominio() }
+
+    fun pendientesPorEnviar(maxIntentos: Int, ahora: Long): List<Producto> =
+        consultas.pendientesPorEnviar(maxIntentos.toLong(), ahora).executeAsList().map { it.aDominio() }
+
+    fun observarPendientes(maxIntentos: Int): Flow<Long> =
+        consultas.contarPendientes(maxIntentos.toLong()).asFlow().mapToOne(Dispatchers.Default)
+
+    fun observarFallidas(maxIntentos: Int): Flow<Long> =
+        consultas.contarFallidas(maxIntentos.toLong()).asFlow().mapToOne(Dispatchers.Default)
+
+    fun contarPendientes(maxIntentos: Int): Int =
+        consultas.contarPendientes(maxIntentos.toLong()).executeAsOne().toInt()
+
+    fun sumarIntento(id: Long, motivo: String, proximo: Long, confirmacion: Boolean) {
+        consultas.sumarIntento(motivo, proximo, if (confirmacion) 1L else 0L, id)
+    }
+
+    fun marcarFallida(id: Long, motivo: String, maxIntentos: Int) {
+        consultas.marcarFallida(maxIntentos.toLong(), motivo, id)
+    }
+
+    fun autorizarReintento(id: Long, maxIntentos: Int, ahora: Long) {
+        consultas.autorizarReintento(maxIntentos.toLong(), id, ahora)
+    }
+
+    fun actualizarPendiente(producto: Producto): Producto {
+        consultas.actualizarPendiente(producto.nombre, producto.precio, producto.stock.toLong(),
+            if (producto.activo) 1L else 0L, producto.id)
+        return requireNotNull(obtener(producto.id))
+    }
 
     fun guardarPendiente(producto: Producto): Producto {
         val menor = consultas.siguienteIdLocal().executeAsOne()
@@ -75,5 +106,9 @@ private fun FilaProducto.aDominio() = Producto(
     precio = precio,
     stock = stock.toInt(),
     activo = activo == 1L,
-    pendiente = pendiente == 1L
+    pendiente = pendiente == 1L,
+    intentos = intentos.toInt(),
+    ultimoError = ultimoError,
+    proximoIntento = proximoIntento,
+    requiereConfirmacion = requiereConfirmacion == 1L
 )
