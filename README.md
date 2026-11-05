@@ -1,5 +1,15 @@
 # PharmaMobil — Consumo REST con Ktor
 
+## Actividad autónoma 13 (noviembre de 2026)
+
+El recorrido actual usa **PharmaSoft** (`http://10.0.2.2:8080/api/v1/` en el emulador Android). Las primeras secciones de este README conservan el historial de prácticas anteriores con la API de ejemplo.
+
+- [Productos A-D y formato del entregable](docs/sesion13/08_actividad_autonoma.md).
+- [Pruebas y capturas pendientes, sin repetir las que siguen vigentes](docs/sesion13/09_capturas_pendientes.md).
+- [Ficha de integración con decisiones y fechas](docs/sesion13/10_ficha_integracion.md).
+
+La pantalla de detalle consulta primero el producto local y muestra el ID provisional o del servicio. No se modifican el formulario ni la política de permisos. La conservación de borradores tras expirar la sesión sigue prevista para la sesión 14.
+
 ## URL base
 
 `https://api.escuelajs.co/api/v1/`
@@ -91,11 +101,13 @@ Sesión 10: PharmaMobil inicia sesión contra PharmaSoft con un token JWT, lo gu
 
 Cargados por Flyway en PharmaSoft (solo para desarrollo).
 
-| Usuario | Contraseña | Rol | Permisos |
-|---|---|---|---|
-| `admin` | `Admin123` | ADMIN | Los ocho permisos del sistema |
-| `vendedor` | `Vendedor123` | VENDEDOR | Catálogo solo lectura; clientes y ventas completos |
-| `almacen` | `Almacen123` | ALMACENERO | Solo catálogo: leer y escribir |
+| Usuario | Rol | Permisos |
+|---|---|---|
+| `admin` | ADMIN | Los ocho permisos del sistema |
+| `vendedor` | VENDEDOR | Catálogo solo lectura; clientes y ventas completos |
+| `almacen` | ALMACENERO | Solo catálogo: leer y escribir |
+
+Obtener las contraseñas del entorno local de desarrollo. No publicarlas en el README ni en las capturas del entregable.
 
 ### Almacén seguro del token
 
