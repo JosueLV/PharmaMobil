@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 import pe.edu.upeu.pharmamobil.domain.model.Producto
 import pe.edu.upeu.pharmamobil.domain.platform.Compartidor
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
@@ -29,15 +30,15 @@ class DetalleProductoViewModel(
 
     fun cargar(id: Long) {
         viewModelScope.launch {
+            productoActual = null
             _estado.value = DetalleEstado.Cargando
             try {
-                val producto = repository.listar().firstOrNull { it.id == id }
-                if (producto == null) {
-                    _estado.value = DetalleEstado.Error("Producto no encontrado")
-                } else {
-                    productoActual = producto
-                    _estado.value = DetalleEstado.Listo(producto.toUi())
-                }
+                // obtener consulta primero la base local, incluidos los ID provisionales.
+                val producto = repository.obtener(id)
+                productoActual = producto
+                _estado.value = DetalleEstado.Listo(producto.toUi())
+            } catch (cancelacion: CancellationException) {
+                throw cancelacion
             } catch (e: Exception) {
                 _estado.value = DetalleEstado.Error(e.message ?: "Error al cargar el producto")
             }

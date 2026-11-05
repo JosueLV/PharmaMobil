@@ -50,6 +50,13 @@ fun DetalleProductoScreen(
                     Text(e.producto.nombre, style = MaterialTheme.typography.titleLarge)
                     Text(e.producto.precio, style = MaterialTheme.typography.titleMedium)
                     Text("Stock: ${e.producto.stock} u.")
+                    Text(
+                        text = if (e.producto.pendiente)
+                            "ID local provisional: ${e.producto.id} · Pendiente de envío"
+                        else "ID del servicio: ${e.producto.id}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
                     Button(onClick = { viewModel.compartir() }) {
                         Icon(Icons.Default.Share, contentDescription = null)
