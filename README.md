@@ -1,5 +1,11 @@
 # PharmaMobil — Consumo REST con Ktor
 
+## Guía práctica 14 — builds firmados
+
+La preparación de firma, backend para teléfono físico, minificación y pruebas está en [docs/sesion14/README.md](docs/sesion14/README.md). Incluye los siete pasos, el archivo privado `keystore.properties` (solo su plantilla se versiona), el script `scripts/preparar-entrega-android.ps1` y la matriz de dispositivos.
+
+Los artefactos firmados y las pruebas físicas se registran después de ejecutarse. No hay todavía una etiqueta final ni una compilación release certificada. La conservación del borrador al expirar sesión se declara como limitación del alcance congelado.
+
 ## Actividad autónoma 13 (noviembre de 2026)
 
 El recorrido actual usa **PharmaSoft** (`http://10.0.2.2:8080/api/v1/` en el emulador Android). Las primeras secciones de este README conservan el historial de prácticas anteriores con la API de ejemplo.
@@ -8,7 +14,7 @@ El recorrido actual usa **PharmaSoft** (`http://10.0.2.2:8080/api/v1/` en el emu
 - [Pruebas y capturas pendientes, sin repetir las que siguen vigentes](docs/sesion13/09_capturas_pendientes.md).
 - [Ficha de integración con decisiones y fechas](docs/sesion13/10_ficha_integracion.md).
 
-La pantalla de detalle consulta primero el producto local y muestra el ID provisional o del servicio. No se modifican el formulario ni la política de permisos. La conservación de borradores tras expirar la sesión sigue prevista para la sesión 14.
+La pantalla de detalle consulta primero el producto local y muestra el ID provisional o del servicio. No se modifican el formulario ni la política de permisos. La conservación de borradores tras expirar la sesión se reclasificó como limitación en la ficha de la sesión 14.
 
 ## URL base
 
