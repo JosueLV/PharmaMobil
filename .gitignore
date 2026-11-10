@@ -17,3 +17,15 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Firma privada de entrega (sesion 14)
+keystore.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+# Artefactos y evidencias locales de entrega
+entrega-local/
+*.aab
+*.apk
+*.apks
