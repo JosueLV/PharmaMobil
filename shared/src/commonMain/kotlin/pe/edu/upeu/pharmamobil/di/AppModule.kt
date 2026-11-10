@@ -38,15 +38,15 @@ expect val platformModule: Module
 // id real de la categoria "Medicamentos" creada en PharmaSoft (POST /api/v1/categorias)
 private const val CATEGORIA_POR_DEFECTO = 1L
 
-private const val ES_DEPURACION = true
 val networkModule = module {
     single { SesionEventos() }
     single<HttpClient> {
         crearHttpClient(
             get<HttpClientEngine>(),
             get<AlmacenSeguro>(),
-            ES_DEPURACION,
-            get<SesionEventos>()::notificarExpirada
+            esDepuracion = getProperty<Boolean>("pharma.esDepuracion", false),
+            alExpirarSesion = get<SesionEventos>()::notificarExpirada,
+            urlBase = getProperty<String>("pharma.urlBase", "http://10.0.2.2:8080/api/v1/")
         )
     }
     single { ProductoApi(get()) }

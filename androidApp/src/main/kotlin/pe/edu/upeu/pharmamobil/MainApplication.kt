@@ -9,6 +9,10 @@ class MainApplication : Application() {
         super.onCreate()
         initKoin {
             androidContext(this@MainApplication)
+            properties(mapOf(
+                "pharma.urlBase" to BuildConfig.PHARMA_API_URL,
+                "pharma.esDepuracion" to BuildConfig.DEBUG
+            ))
         }
     }
 }

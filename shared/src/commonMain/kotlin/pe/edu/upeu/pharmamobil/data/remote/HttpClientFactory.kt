@@ -35,7 +35,8 @@ fun crearHttpClient(
     engine: HttpClientEngine,
     almacen: AlmacenSeguro? = null,
     esDepuracion: Boolean = true,
-    alExpirarSesion: (() -> Unit)? = null
+    alExpirarSesion: (() -> Unit)? = null,
+    urlBase: String = "http://10.0.2.2:8080/api/v1/"
 ): HttpClient =
     HttpClient(engine) {
         expectSuccess = true
@@ -92,7 +93,7 @@ fun crearHttpClient(
         }
 
         defaultRequest {
-            url("http://10.0.2.2:8080/api/v1/")
+            url(urlBase)
             contentType(ContentType.Application.Json)
         }
     }
