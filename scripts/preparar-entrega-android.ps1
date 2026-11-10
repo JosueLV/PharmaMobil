@@ -66,7 +66,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'La firma APK no es valida; no distribuir.' }
     # AAB usa firma JAR, no apksigner. Un certificado propio puede avisar que es autofirmado.
     & $jarsigner '-J-Duser.language=en' '-J-Duser.country=US' -verify $aab 2>&1 |
-        Tee-Object -Variable verificacionAab -FilePath (Join-Path $salida 'firma-aab.txt')
+        Tee-Object -Variable verificacionAab |
+        Tee-Object -FilePath (Join-Path $salida 'firma-aab.txt')
     if ($LASTEXITCODE -ne 0 -or ($verificacionAab -join "`n") -notmatch 'jar verified\.') {
         throw 'No se confirmo la firma JAR del AAB; revisar firma-aab.txt.'
     }
