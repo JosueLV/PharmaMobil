@@ -69,19 +69,12 @@ require(uriBackend.scheme in listOf("http", "https") && !uriBackend.host.isNullO
     "pharmaApiUrl debe ser una URL HTTP(S), sin credenciales, query ni fragmento."
 }
 val hostBackend = uriBackend.host
-val redGenerada = layout.buildDirectory.dir("generated/pharmaNetwork/res")
-val generarRedBackend = tasks.register<GenerarRedBackend>("generarRedBackend") {
-    host.set(hostBackend)
-    permitirHttp.set(uriBackend.scheme == "http")
-    destino.set(redGenerada)
-}
 val validarEntrega = tasks.register<ValidarEntrega>("validarEntrega") {
     faltantes.set(faltantesFirma)
     urlExplicita.set(!urlConfigurada.isNullOrBlank())
     host.set(hostBackend)
     archivoFirma?.let { almacen.set(it) }
 }
-tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(generarRedBackend) }
 tasks.matching { it.name == "preReleaseBuild" }.configureEach { dependsOn(validarEntrega) }
 
 kotlin {
@@ -111,7 +104,6 @@ android {
         versionName = "1.0.0"
         buildConfigField("String", "PHARMA_API_URL", "\"$urlBackend\"")
     }
-    sourceSets.getByName("main").res.srcDir(redGenerada)
     signingConfigs {
         if (faltantesFirma.isEmpty()) {
             create("release") {
@@ -144,5 +136,17 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        val nombreVariante = variant.name.replaceFirstChar { it.uppercaseChar() }
+        val generarRed = tasks.register<GenerarRedBackend>("generarRedBackend$nombreVariante") {
+            host.set(hostBackend)
+            permitirHttp.set(uriBackend.scheme == "http")
+        }
+        // AGP asigna el directorio por variante y conecta la tarea con sus consumidores.
+        variant.sources.res?.addGeneratedSourceDirectory(generarRed, GenerarRedBackend::destino)
     }
 }
