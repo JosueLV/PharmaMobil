@@ -52,7 +52,7 @@ try {
     if ($LASTEXITCODE -ne 0 -or ($verificacionAab -join "`n") -notmatch 'jar verified\.') {
         throw 'No se confirmo la firma JAR del AAB; revisar firma-aab.txt.'
     }
-    & $keytool -printcert -jarfile $aab 2>&1 |
+    & $keytool '-J-Duser.language=en' '-J-Duser.country=US' -printcert -jarfile $aab 2>&1 |
         Tee-Object -FilePath (Join-Path $salida 'certificado-aab.txt')
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo leer el certificado del AAB.' }
     Copy-Item $apk (Join-Path $salida "Equipo${Equipo}_ProyectoFinal_Android.apk")

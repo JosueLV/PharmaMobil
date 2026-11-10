@@ -25,7 +25,9 @@ Produce en `entrega-local/<fecha>/` (ignorado por Git):
 - `firma-aab.txt`: jarsigner -verify; `certificado-aab.txt`: certificado del AAB.
 - `sha256.csv`: integridad de cada archivo; `ficha-build.txt`: commit, URL, versión y ejecución.
 
-La huella SHA-256 del **archivo** no es la huella del **certificado**. Registrar ambas con su etiqueta correcta. Comparar los certificados de APK y AAB con `keytool -list -v -keystore C:\ClavesPharmaMobil\equipo2.jks -alias equipo2`. El almacén solicita su contraseña de forma interactiva. La captura debe mostrar titular, huella y verificación, nunca contraseñas.
+La huella SHA-256 del **archivo** no es la huella del **certificado**. Registrar ambas con su etiqueta correcta. Comparar los certificados de APK y AAB con `keytool "-J-Duser.language=en" "-J-Duser.country=US" -list -v -keystore C:\ClavesPharmaMobil\equipo2.jks -alias equipo2`. El almacén solicita su contraseña de forma interactiva. La captura debe mostrar titular, huella y verificación, nunca contraseñas.
+
+La consulta usa salida en inglés para evitar el fallo `MissingFormatArgumentException` observado al imprimir el certificado en español. Los indicadores `-J-D...` solo configuran el idioma de esa ejecución: no convierten el almacén ni cambian la clave. El script aplica lo mismo al consultar el certificado del AAB.
 
 ## Instalación
 
