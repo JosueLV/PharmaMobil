@@ -15,6 +15,8 @@ Estado: automatización preparada. Aún no hay artefactos de release generados n
 # Si el SDK está en otra carpeta, agregar -SdkPath 'C:\ruta\Android\Sdk'.
 ```
 
+El script detecta el SDK en este orden: parámetro `-SdkPath`, `sdk.dir` del archivo local `local.properties`, `ANDROID_HOME`, `ANDROID_SDK_ROOT` y ubicación habitual en LocalAppData. Lee las rutas escapadas que escribe Android Studio y comprueba la carpeta `build-tools` antes de buscar apksigner. No subir `local.properties` al repositorio.
+
 El script ejecuta tests del módulo compartido, bundleRelease y assembleRelease. Desactiva la caché de configuración en esta ejecución de firma para no persistir sus valores en esa caché. No solicita ni imprime contraseñas. Si falla, detener la entrega y conservar el error.
 
 Produce en `entrega-local/<fecha>/` (ignorado por Git):

@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$ApiUrl,
     [ValidateRange(1, 99)][int]$Equipo = 2,
-    [string]$SdkPath = "$env:LOCALAPPDATA\Android\Sdk"
+    [string]$SdkPath = ''
 )
 $ErrorActionPreference = 'Stop'
 $raizProyecto = Split-Path $PSScriptRoot -Parent
@@ -16,7 +16,25 @@ try {
         $uri.Host -in @('10.0.2.2','localhost','127.0.0.1','[::1]')) {
         throw 'Usa la IP LAN del backend o un servidor HTTPS accesible desde el telefono.'
     }
-    $buildTools = Get-ChildItem (Join-Path $SdkPath 'build-tools') -Directory |
+    # Prioridad: parametro explicito, SDK del proyecto, entorno, ruta habitual.
+    if ([string]::IsNullOrWhiteSpace($SdkPath) -and (Test-Path 'local.properties')) {
+        foreach ($linea in [System.IO.File]::ReadAllLines((Join-Path $raizProyecto 'local.properties'))) {
+            if ($linea -match '^\s*sdk\.dir\s*[=:]\s*(.+)$') {
+                # Android Studio guarda rutas como C\:\\Android\\Sdk.
+                $SdkPath = [regex]::Unescape($Matches[1].Trim())
+                break
+            }
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($SdkPath)) { $SdkPath = $env:ANDROID_HOME }
+    if ([string]::IsNullOrWhiteSpace($SdkPath)) { $SdkPath = $env:ANDROID_SDK_ROOT }
+    if ([string]::IsNullOrWhiteSpace($SdkPath)) { $SdkPath = "$env:LOCALAPPDATA\Android\Sdk" }
+    $carpetaBuildTools = Join-Path $SdkPath 'build-tools'
+    if (-not (Test-Path -LiteralPath $carpetaBuildTools -PathType Container)) {
+        throw "No existe build-tools en el SDK '$SdkPath'. Revisa sdk.dir en local.properties o pasa -SdkPath con la ubicacion del SDK de Android Studio."
+    }
+    Write-Host "SDK Android: $SdkPath"
+    $buildTools = Get-ChildItem -LiteralPath $carpetaBuildTools -Directory |
         Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' } |
         Sort-Object { [Version]$_.Name } -Descending |
         Where-Object { Test-Path (Join-Path $_.FullName 'apksigner.bat') } |
