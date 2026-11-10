@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+        A13F00000000000000000001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A13F00000000000000000011 /* FirebaseCore */; };
+        A13F00000000000000000002 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = A13F00000000000000000012 /* FirebaseCrashlytics */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		C79EFBAA30C0380D7D18E982 /* PharmaMobil.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PharmaMobil.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -41,6 +46,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                A13F00000000000000000001 /* FirebaseCore in Frameworks */,
+                A13F00000000000000000002 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +92,8 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
+                A13F00000000000000000011 /* FirebaseCore */,
+                A13F00000000000000000012 /* FirebaseCrashlytics */,
 			);
 			productName = iosApp;
 			productReference = C79EFBAA30C0380D7D18E982 /* PharmaMobil.app */;
@@ -116,6 +125,7 @@
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C4E9E37A57907DA37E1DDBAE /* Products */;
+			packageReferences = (A13F00000000000000000010 /* firebase-ios-sdk */);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -347,6 +357,27 @@
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+        A13F00000000000000000010 /* firebase-ios-sdk */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+            requirement = { kind = exactVersion; version = 11.8.0; };
+        };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+        A13F00000000000000000011 /* FirebaseCore */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A13F00000000000000000010 /* firebase-ios-sdk */;
+            productName = FirebaseCore;
+        };
+        A13F00000000000000000012 /* FirebaseCrashlytics */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = A13F00000000000000000010 /* firebase-ios-sdk */;
+            productName = FirebaseCrashlytics;
+        };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		11DB4A040A154927ECC9B0FB /* Build configuration list for PBXProject "iosApp" */ = {

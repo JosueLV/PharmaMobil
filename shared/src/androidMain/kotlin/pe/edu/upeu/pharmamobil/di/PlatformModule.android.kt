@@ -5,7 +5,22 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import org.koin.android.ext.koin.androidContext
+import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguro
+import pe.edu.upeu.pharmamobil.data.local.AlmacenSeguroAndroid
+import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriver
+import pe.edu.upeu.pharmamobil.data.local.CreadorDeDriverAndroid
+import pe.edu.upeu.pharmamobil.domain.platform.Compartidor
+import pe.edu.upeu.pharmamobil.platform.CompartidorAndroid
+
+import pe.edu.upeu.pharmamobil.data.permiso.GestorPermisosAndroid
+import pe.edu.upeu.pharmamobil.domain.permiso.GestorPermisos
 
 actual val platformModule: Module = module {
+    single { GestorPermisosAndroid(androidContext()) }
+    single<GestorPermisos> { get<GestorPermisosAndroid>() }
     single<HttpClientEngine> { OkHttp.create() }
+    single<Compartidor> { CompartidorAndroid(androidContext()) }
+    single<AlmacenSeguro> { AlmacenSeguroAndroid(androidContext()) }
+    single<CreadorDeDriver> { CreadorDeDriverAndroid(androidContext()) }
 }

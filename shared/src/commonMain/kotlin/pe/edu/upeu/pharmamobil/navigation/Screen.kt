@@ -8,4 +8,8 @@ sealed class Screen {
     data object Clientes : Screen()
 
     data object Pedidos : Screen()
+
+    data object Permisos : Screen()
+
+    data object AcercaDe : Screen()
 }

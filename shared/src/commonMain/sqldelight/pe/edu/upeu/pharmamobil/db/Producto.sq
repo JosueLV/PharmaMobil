@@ -1,0 +1,72 @@
+CREATE TABLE producto (
+    id        INTEGER NOT NULL PRIMARY KEY,
+    nombre    TEXT    NOT NULL,
+    precio    REAL    NOT NULL,
+    stock     INTEGER NOT NULL,
+    pendiente INTEGER NOT NULL DEFAULT 0,
+    activo    INTEGER NOT NULL DEFAULT 1,
+    intentos INTEGER NOT NULL DEFAULT 0,
+    ultimoError TEXT,
+    proximoIntento INTEGER NOT NULL DEFAULT 0,
+    requiereConfirmacion INTEGER NOT NULL DEFAULT 0
+);
+
+listarTodos:
+SELECT * FROM producto ORDER BY nombre ASC;
+
+listarPendientes:
+SELECT * FROM producto WHERE pendiente = 1;
+
+insertar:
+INSERT OR REPLACE INTO producto (id, nombre, precio, stock, pendiente, activo)
+VALUES (?, ?, ?, ?, ?, ?);
+
+borrarSincronizados:
+DELETE FROM producto WHERE pendiente = 0;
+
+siguienteIdLocal:
+-- COALESCE evita el NULL de la tabla vacia; el minOf de Kotlin
+-- garantiza que el id resultante sea siempre negativo.
+SELECT COALESCE(MIN(id), 0) FROM producto;
+borrarPorId:
+DELETE FROM producto WHERE id = ?;
+
+buscarPorId:
+SELECT * FROM producto WHERE id = ?;
+
+
+pendientesPorEnviar:
+SELECT * FROM producto
+WHERE pendiente = 1 AND intentos < :maxIntentos
+  AND requiereConfirmacion = 0 AND proximoIntento <= :ahora
+ORDER BY id;
+
+contarPendientes:
+SELECT COUNT(*) FROM producto WHERE pendiente = 1 AND intentos < :maxIntentos;
+
+contarFallidas:
+SELECT COUNT(*) FROM producto WHERE pendiente = 1 AND intentos >= :maxIntentos;
+
+sumarIntento:
+UPDATE producto SET intentos = intentos + 1, ultimoError = :motivo,
+    proximoIntento = :proximo, requiereConfirmacion = :confirmacion
+WHERE id = :id AND pendiente = 1;
+
+marcarFallida:
+UPDATE producto SET intentos = :maxIntentos, ultimoError = :motivo,
+    requiereConfirmacion = 1 WHERE id = :id AND pendiente = 1;
+
+autorizarReintento:
+UPDATE producto SET requiereConfirmacion = 0,
+    intentos = CASE WHEN intentos >= :maxIntentos THEN 0 ELSE intentos END
+WHERE id = :id AND pendiente = 1 AND proximoIntento <= :ahora;
+
+actualizarPendiente:
+UPDATE producto SET nombre = :nombre, precio = :precio, stock = :stock, activo = :activo,
+    intentos = 0, ultimoError = NULL, proximoIntento = 0, requiereConfirmacion = 1
+WHERE id = :id AND pendiente = 1;
+
+marcarEnviando:
+UPDATE producto SET requiereConfirmacion = 1,
+    ultimoError = 'Envío iniciado: si se interrumpió, comprueba el servidor antes de reenviar'
+WHERE id = ? AND pendiente = 1;

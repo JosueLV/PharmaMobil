@@ -1,5 +1,6 @@
 package pe.edu.upeu.pharmamobil.domain.presentation.producto
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,19 +14,26 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,20 +43,49 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import pe.edu.upeu.pharmamobil.domain.model.Producto
+import kotlinx.coroutines.delay
+import kotlin.time.Clock
 import pe.edu.upeu.pharmamobil.domain.presentation.components.EstadoVacio
 import pe.edu.upeu.pharmamobil.domain.presentation.components.MensajeExito
 import pe.edu.upeu.pharmamobil.domain.presentation.components.ValidatedTextField
 
 @Composable
 fun ProductoScreen(
-    viewModel: ProductoViewModel
+    viewModel: ProductoViewModel,
+    puedeEscribir: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val formulario = uiState.formulario
+    val operacion = uiState.operacion
 
     var tabSeleccionada by remember { mutableStateOf(0) }
     val titulosTabs = listOf("Activos", "Inactivos", "Bajo Stock")
+
+    val idEnCursoEliminando = (operacion as? Operacion.EnCurso)
+        ?.takeIf { it.tipo == Operacion.Tipo.Eliminar }
+        ?.productoId
+
+    var reenvio by remember { mutableStateOf<ProductoUi?>(null) }
+    reenvio?.let { producto ->
+        AlertDialog(
+            onDismissRequest = { reenvio = null },
+            title = { Text("Revisar reenvío") },
+            text = { Text("${producto.nombre}\n${producto.ultimoError ?: "Pendiente de envío"}\n\n" +
+                "Comprueba en el servidor si ya existe. Si se perdió la respuesta anterior, " +
+                "reenviarlo podría duplicarlo. Si existe, cancela y concilia el registro antes de reenviar.") },
+            confirmButton = { TextButton(onClick = {
+                viewModel.reintentar(producto.id)
+                reenvio = null
+            }, enabled = !uiState.sincronizando) { Text("Verifiqué: reenviar") } },
+            dismissButton = { TextButton(onClick = { reenvio = null }) { Text("Cancelar") } }
+        )
+    }
+
+    var detalleId by remember { mutableStateOf<Long?>(null) }
+    detalleId?.let { id ->
+        DetalleProductoScreen(productoId = id, onVolver = { detalleId = null })
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -57,28 +94,96 @@ fun ProductoScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-        FormularioProductoCard(
-            nombre = formulario.nombre,
-            precio = formulario.precio,
-            stock = formulario.stock,
-            nombreError = formulario.nombreError,
-            precioError = formulario.precioError,
-            stockError = formulario.stockError,
-            enviando = formulario.enviando,
-            onNombreChange = viewModel::onNombreChange,
-            onPrecioChange = viewModel::onPrecioChange,
-            onStockChange = viewModel::onStockChange,
-            onRegistrar = viewModel::registrar
-        )
-
-        formulario.mensajeExito?.let {
-            MensajeExito(it)
+        if (puedeEscribir) {
+            FormularioProductoCard(
+                estaEditando = formulario.estaEditando,
+                nombre = formulario.nombre,
+                precio = formulario.precio,
+                stock = formulario.stock,
+                nombreError = formulario.nombreError,
+                precioError = formulario.precioError,
+                stockError = formulario.stockError,
+                enviando = formulario.enviando,
+                onNombreChange = viewModel::onNombreChange,
+                onPrecioChange = viewModel::onPrecioChange,
+                onStockChange = viewModel::onStockChange,
+                onGuardar = viewModel::registrar,
+                onCancelar = viewModel::cancelarEdicion
+            )
         }
 
-        Text(
-            text = "Inventario",
-            style = MaterialTheme.typography.titleMedium
-        )
+        uiState.mensajeExito?.let {
+            MensajeExito(it)
+        }
+        uiState.avisoRed?.let { aviso ->
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(text = aviso, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+
+        if (operacion is Operacion.Fallida) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = operacion.mensaje,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = viewModel::descartarError) {
+                        Icon(imageVector = Icons.Default.CloudOff, contentDescription = "Cerrar")
+                    }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Inventario", style = MaterialTheme.typography.titleMedium)
+                AntiguedadDatos(uiState.ultimaSincronizacion)
+                Text("${uiState.pendientes} por enviar · ${uiState.fallidas} fallidas",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (uiState.fallidas > 0) MaterialTheme.colorScheme.error
+                        else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(uiState.ultimaConexion, style = MaterialTheme.typography.labelSmall)
+            }
+            if (uiState.sincronizando) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            } else {
+                FilledTonalButton(onClick = viewModel::sincronizar) {
+                    Text("Sincronizar")
+                }
+            }
+        }
 
         ScrollableTabRow(selectedTabIndex = tabSeleccionada) {
             titulosTabs.forEachIndexed { index, titulo ->
@@ -115,7 +220,7 @@ fun ProductoScreen(
                     EstadoVacio(
                         icono = Icons.Default.Inventory2,
                         titulo = "Todavía no hay productos",
-                        descripcion = "Registra el primero con el formulario de arriba.",
+                        descripcion = if (puedeEscribir) "Registra el primero con el formulario de arriba." else "Aún no hay productos en el catálogo.",
                         modifier = Modifier.align(Alignment.Center)
                     )
 
@@ -127,7 +232,7 @@ fun ProductoScreen(
                         colorIcono = MaterialTheme.colorScheme.error,
                         modifier = Modifier.align(Alignment.Center),
                         accion = {
-                            FilledTonalButton(onClick = viewModel::cargarProductos) {
+                            FilledTonalButton(onClick = { viewModel.sincronizar() }) {
                                 Text("Reintentar")
                             }
                         }
@@ -155,7 +260,15 @@ fun ProductoScreen(
                                 items = productosFiltrados,
                                 key = { it.id }
                             ) { producto ->
-                                ProductoItem(producto)
+                                ProductoItem(
+                                    producto = producto,
+                                    eliminando = idEnCursoEliminando == producto.id,
+                                    mostrarAcciones = puedeEscribir,
+                                    onClick = { detalleId = producto.id },
+                                    onReintentar = { reenvio = producto },
+                                    onEditar = { viewModel.iniciarEdicion(producto.id) },
+                                    onEliminar = { viewModel.eliminar(producto.id) }
+                                )
                             }
                         }
                     }
@@ -166,7 +279,24 @@ fun ProductoScreen(
 }
 
 @Composable
+private fun AntiguedadDatos(ultimaSincronizacion: Long?) {
+    var ahora by remember { mutableStateOf(Clock.System.now().toEpochMilliseconds()) }
+    LaunchedEffect(ultimaSincronizacion) {
+        while (true) {
+            ahora = Clock.System.now().toEpochMilliseconds()
+            delay(60_000L)
+        }
+    }
+    Text(
+        text = textoUltimaSincronizacion(ultimaSincronizacion, ahora),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
 private fun FormularioProductoCard(
+    estaEditando: Boolean,
     nombre: String,
     precio: String,
     stock: String,
@@ -177,7 +307,8 @@ private fun FormularioProductoCard(
     onNombreChange: (String) -> Unit,
     onPrecioChange: (String) -> Unit,
     onStockChange: (String) -> Unit,
-    onRegistrar: () -> Unit
+    onGuardar: () -> Unit,
+    onCancelar: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -185,7 +316,7 @@ private fun FormularioProductoCard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Registrar producto",
+                text = if (estaEditando) "Editar producto" else "Registrar producto",
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -223,20 +354,50 @@ private fun FormularioProductoCard(
                 )
             }
 
-            Button(
-                onClick = onRegistrar,
-                enabled = !enviando,
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(if (enviando) "Registrando…" else "Registrar")
+                if (estaEditando) {
+                    OutlinedButton(
+                        onClick = onCancelar,
+                        enabled = !enviando,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+
+                Button(
+                    onClick = onGuardar,
+                    enabled = !enviando,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        when {
+                            enviando && estaEditando -> "Guardando…"
+                            enviando -> "Registrando…"
+                            estaEditando -> "Guardar cambios"
+                            else -> "Registrar"
+                        }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ProductoItem(producto: Producto) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun ProductoItem(
+    producto: ProductoUi,
+    eliminando: Boolean,
+    mostrarAcciones: Boolean,
+    onClick: () -> Unit,
+    onReintentar: () -> Unit,
+    onEditar: () -> Unit,
+    onEliminar: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -262,13 +423,24 @@ private fun ProductoItem(producto: Producto) {
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = "S/ ${producto.precio}  ·  ${producto.stock} u.",
+                    text = "${producto.precio}  ·  ${producto.stock} u.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (producto.pendiente) {
+                    Text(
+                        text = if (producto.fallida) "Envío fallido · revisar" else "Pendiente · ${producto.intentos} intentos",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (producto.fallida) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
+                    )
+                    producto.ultimoError?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    if (mostrarAcciones) {
+                        TextButton(onClick = onReintentar) { Text("Revisar y reintentar") }
+                    }
+                }
             }
 
-            if (producto.requiereReposicion()) {
+            if (producto.requiereReposicion) {
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.errorContainer,
@@ -281,6 +453,20 @@ private fun ProductoItem(producto: Producto) {
                     )
                 }
             }
+
+            if (!mostrarAcciones) {
+                // Sin permiso de escritura, solo se muestra el detalle.
+            } else if (eliminando) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+            } else {
+                IconButton(onClick = onEditar) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Editar")
+                }
+                IconButton(onClick = onEliminar) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
+                }
+            }
         }
     }
 }
+
